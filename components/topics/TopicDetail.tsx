@@ -9,9 +9,11 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native'
+import { Image } from 'expo-image'
+import * as ImagePicker from 'expo-image-picker'
 import { router } from 'expo-router'
 import { useAuth } from '@/contexts/AuthContext'
-import { db } from '@/services/selfdb'
+import { db, storage } from '@/services/selfdb'
 import { Topic, Comment } from '@/types'
 import { formatDate } from '@/lib/utils'
 import { FilePreview } from '@/components/FilePreview'
@@ -29,6 +31,7 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack }) => 
   const [commentText, setCommentText] = useState('')
   const [authorName, setAuthorName] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<string | null>(null)
 
   useEffect(() => {
     if (topicId) {
@@ -85,11 +88,29 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack }) => 
     setSubmitting(true)
 
     try {
+      let fileId: string | undefined
+
+      // Upload file if one is selected
+      if (selectedFile) {
+        // Create a File object from the URI
+        const fileInfo = await fetch(selectedFile)
+        const blob = await fileInfo.blob()
+        const fileName = selectedFile.split('/').pop() || 'file'
+        
+        const file = new File([blob], fileName, {
+          type: blob.type || 'application/octet-stream'
+        })
+        
+        const uploadResult = await storage.upload('discussion', file)
+        fileId = uploadResult.file.id.toString()
+      }
+
       const commentData = {
         topic_id: topic.id,
         content: commentText.trim(),
         author_name: isAuthenticated ? user!.email : authorName.trim(),
         user_id: isAuthenticated ? user!.id : undefined,
+        file_id: fileId,
       }
 
       const newComment = await db.from('comments').insert(commentData) as unknown as Comment
@@ -97,12 +118,98 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack }) => 
       
       setCommentText('')
       setAuthorName('')
+      setSelectedFile(null)
     } catch (error) {
       console.error('Failed to add comment:', error)
       Alert.alert('Error', 'Failed to add comment')
     } finally {
       setSubmitting(false)
     }
+  }
+
+  const pickMedia = async () => {
+    try {
+      Alert.alert(
+        'Select Media',
+        'Choose how you want to add media',
+        [
+          {
+            text: 'Camera',
+            onPress: () => openCamera(),
+          },
+          {
+            text: 'Photo Library',
+            onPress: () => openLibrary(),
+          },
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+        ]
+      )
+    } catch (error) {
+      console.error('Error showing media options:', error)
+      Alert.alert('Error', 'Failed to show media options.')
+    }
+  }
+
+  const openCamera = async () => {
+    try {
+      // Request camera permission
+      const { status } = await ImagePicker.requestCameraPermissionsAsync()
+      
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Please grant permission to access the camera.')
+        return
+      }
+
+      // Launch camera
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.All,
+        allowsEditing: true,
+        quality: 0.8,
+      })
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0]
+        setSelectedFile(asset.uri)
+      }
+    } catch (error) {
+      console.error('Error opening camera:', error)
+      Alert.alert('Error', 'Failed to open camera.')
+    }
+  }
+
+  const openLibrary = async () => {
+    try {
+      // Request permission
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
+      
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Please grant permission to access your photo library.')
+        return
+      }
+
+      // Launch image picker
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.All, // Allows both images and videos
+        allowsEditing: true,
+        quality: 0.8,
+        allowsMultipleSelection: false,
+      })
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0]
+        setSelectedFile(asset.uri)
+      }
+    } catch (error) {
+      console.error('Error picking from library:', error)
+      Alert.alert('Error', 'Failed to pick media file.')
+    }
+  }
+
+  const removeFile = () => {
+    setSelectedFile(null)
   }
 
   if (loading) {
@@ -201,6 +308,35 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack }) => 
             onChangeText={setAuthorName}
           />
         )}
+
+        {/* File Upload Section */}
+        <View style={styles.fileSection}>
+          <TouchableOpacity
+            style={styles.uploadButton}
+            onPress={pickMedia}
+            disabled={submitting}
+          >
+            <Text style={styles.uploadButtonText}>
+              📷 Add Photo or Video
+            </Text>
+          </TouchableOpacity>
+
+          {selectedFile && (
+            <View style={styles.filePreview}>
+              <Image 
+                source={{ uri: selectedFile }} 
+                style={styles.previewImage}
+                contentFit="cover"
+              />
+              <TouchableOpacity
+                style={styles.removeFileButton}
+                onPress={removeFile}
+              >
+                <Text style={styles.removeFileText}>✕ Remove</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
         
         <TouchableOpacity
           style={[styles.submitButton, submitting && styles.buttonDisabled]}
@@ -370,5 +506,48 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.6,
+  },
+  fileSection: {
+    marginBottom: 15,
+  },
+  uploadButton: {
+    backgroundColor: '#f8f9fa',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 15,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  uploadButtonText: {
+    color: '#007AFF',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  filePreview: {
+    backgroundColor: '#f8f9fa',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 10,
+    alignItems: 'center',
+  },
+  previewImage: {
+    width: '100%',
+    height: 150,
+    borderRadius: 6,
+    marginBottom: 10,
+  },
+  removeFileButton: {
+    backgroundColor: '#ff4757',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+  },
+  removeFileText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '500',
   },
 })

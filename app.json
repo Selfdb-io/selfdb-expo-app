@@ -10,7 +10,11 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.selfdb-expo"
+      "bundleIdentifier": "com.anonymous.selfdb-expo",
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app needs access to camera to take photos for posts and comments.",
+        "NSPhotoLibraryUsageDescription": "This app needs access to photo library to select images and videos for posts and comments."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -18,7 +22,13 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "permissions": [],
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO"
+      ],
       "package": "com.anonymous.selfdbexpo"
     },
     "web": {
@@ -42,6 +52,13 @@
         "react-native-video",
         {
           "enableNotificationControls": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "This app needs access to photo library to select images and videos for posts and comments.",
+          "cameraPermission": "This app needs access to camera to take photos for posts and comments."
         }
       ]
     ],
