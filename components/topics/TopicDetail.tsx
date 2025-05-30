@@ -8,6 +8,7 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native'
 import { Image } from 'expo-image'
 import * as ImagePicker from 'expo-image-picker'
@@ -17,6 +18,7 @@ import { db, storage } from '@/services/selfdb'
 import { Topic, Comment } from '@/types'
 import { formatDate } from '@/lib/utils'
 import { FilePreview } from '@/components/FilePreview'
+import { showMediaPickerOptions, safeLaunchCamera, safeLaunchImageLibrary } from '@/lib/deviceUtils'
 
 interface TopicDetailProps {
   topicId: string
@@ -129,23 +131,12 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack }) => 
 
   const pickMedia = async () => {
     try {
+      const options = await showMediaPickerOptions(openCamera, openLibrary)
+      
       Alert.alert(
         'Select Media',
         'Choose how you want to add media',
-        [
-          {
-            text: 'Camera',
-            onPress: () => openCamera(),
-          },
-          {
-            text: 'Photo Library',
-            onPress: () => openLibrary(),
-          },
-          {
-            text: 'Cancel',
-            style: 'cancel',
-          },
-        ]
+        options
       )
     } catch (error) {
       console.error('Error showing media options:', error)
@@ -155,20 +146,15 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack }) => 
 
   const openCamera = async () => {
     try {
-      // Request camera permission
-      const { status } = await ImagePicker.requestCameraPermissionsAsync()
+      const result = await safeLaunchCamera()
       
-      if (status !== 'granted') {
-        Alert.alert('Permission Required', 'Please grant permission to access the camera.')
+      if (!result) {
+        Alert.alert(
+          'Camera Error', 
+          'Failed to open camera. This might be because you\'re using a simulator. Please try using Photo Library instead.'
+        )
         return
       }
-
-      // Launch camera
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.All,
-        allowsEditing: true,
-        quality: 0.8,
-      })
 
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0]
@@ -176,27 +162,21 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack }) => 
       }
     } catch (error) {
       console.error('Error opening camera:', error)
-      Alert.alert('Error', 'Failed to open camera.')
+      Alert.alert(
+        'Camera Error', 
+        'Failed to open camera. This might be because you\'re using a simulator. Please try using Photo Library instead.'
+      )
     }
   }
 
   const openLibrary = async () => {
     try {
-      // Request permission
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
+      const result = await safeLaunchImageLibrary()
       
-      if (status !== 'granted') {
-        Alert.alert('Permission Required', 'Please grant permission to access your photo library.')
+      if (!result) {
+        Alert.alert('Error', 'Failed to access photo library. Please check permissions.')
         return
       }
-
-      // Launch image picker
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.All, // Allows both images and videos
-        allowsEditing: true,
-        quality: 0.8,
-        allowsMultipleSelection: false,
-      })
 
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0]

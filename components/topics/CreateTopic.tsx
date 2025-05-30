@@ -16,6 +16,7 @@ import * as ImagePicker from 'expo-image-picker'
 import { useAuth } from '@/contexts/AuthContext'
 import { db, storage } from '@/services/selfdb'
 import { Topic } from '@/types'
+import { showMediaPickerOptions, safeLaunchCamera, safeLaunchImageLibrary } from '@/lib/deviceUtils'
 
 interface CreateTopicProps {
   onTopicCreated: (topic: Topic) => void
@@ -100,23 +101,12 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
 
   const pickMedia = async () => {
     try {
+      const options = await showMediaPickerOptions(openCamera, openLibrary)
+      
       Alert.alert(
         'Select Media',
         'Choose how you want to add media',
-        [
-          {
-            text: 'Camera',
-            onPress: () => openCamera(),
-          },
-          {
-            text: 'Photo Library',
-            onPress: () => openLibrary(),
-          },
-          {
-            text: 'Cancel',
-            style: 'cancel',
-          },
-        ]
+        options
       )
     } catch (error) {
       console.error('Error showing media options:', error)
@@ -126,20 +116,15 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
 
   const openCamera = async () => {
     try {
-      // Request camera permission
-      const { status } = await ImagePicker.requestCameraPermissionsAsync()
+      const result = await safeLaunchCamera()
       
-      if (status !== 'granted') {
-        Alert.alert('Permission Required', 'Please grant permission to access the camera.')
+      if (!result) {
+        Alert.alert(
+          'Camera Error', 
+          'Failed to open camera. This might be because you\'re using a simulator. Please try using Photo Library instead.'
+        )
         return
       }
-
-      // Launch camera
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.All,
-        allowsEditing: true,
-        quality: 0.8,
-      })
 
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0]
@@ -148,32 +133,26 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
       }
     } catch (error) {
       console.error('Error opening camera:', error)
-      Alert.alert('Error', 'Failed to open camera.')
+      Alert.alert(
+        'Camera Error', 
+        'Failed to open camera. This might be because you\'re using a simulator. Please try using Photo Library instead.'
+      )
     }
   }
 
   const openLibrary = async () => {
     try {
-      // Request permission
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
+      const result = await safeLaunchImageLibrary()
       
-      if (status !== 'granted') {
-        Alert.alert('Permission Required', 'Please grant permission to access your photo library.')
+      if (!result) {
+        Alert.alert('Error', 'Failed to access photo library. Please check permissions.')
         return
       }
-
-      // Launch image picker
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.All, // Allows both images and videos
-        allowsEditing: true,
-        quality: 0.8,
-        allowsMultipleSelection: false,
-      })
 
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0]
         setSelectedFile(asset.uri)
-        setUploadedFileId(null) // Reset uploaded file ID
+        setUploadedFileId(null)
       }
     } catch (error) {
       console.error('Error picking from library:', error)
@@ -217,15 +196,14 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
             />
             
             {!isAuthenticated && (
-
-            <TextInput
-              style={styles.input}
-              placeholder="Your name"
-              placeholderTextColor="#666"
-              value={authorName}
-              onChangeText={setAuthorName}
-            />
-          )}
+              <TextInput
+                style={styles.input}
+                placeholder="Your name"
+                placeholderTextColor="#666"
+                value={authorName}
+                onChangeText={setAuthorName}
+              />
+            )}
 
           {/* File Upload Section */}
           <View style={styles.fileSection}>
