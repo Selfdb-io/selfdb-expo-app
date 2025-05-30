@@ -422,11 +422,12 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   topicImageContainer: {
-    marginBottom: 20,
+    marginBottom: 10,
   },
   topicImage: {
-    height: 250,
     borderRadius: 8,
+    minHeight: 150,
+    maxHeight: 400,
   },
   topicMeta: {
     flexDirection: 'row',
@@ -468,8 +469,9 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   commentImage: {
-    height: 150,
     borderRadius: 6,
+    minHeight: 100,
+    maxHeight: 300,
   },
   commentMeta: {
     flexDirection: 'row',

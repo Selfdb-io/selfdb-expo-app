@@ -256,8 +256,9 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   topicImage: {
-    height: 150,
     borderRadius: 6,
+    minHeight: 150,
+    maxHeight: 400,
   },
   topicMeta: {
     flexDirection: 'row',
@@ -297,7 +298,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   skeletonImage: {
-    height: 150,
+    height: 200,
     backgroundColor: '#e0e0e0',
     borderRadius: 6,
     marginBottom: 10,

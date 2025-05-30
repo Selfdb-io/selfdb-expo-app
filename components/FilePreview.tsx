@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native'
 import { Image } from 'expo-image'
-import Video from 'react-native-video'
+import Video from 'react-native-video' // Your current video player
+import { Ionicons } from '@expo/vector-icons'
 import { storage } from '@/services/selfdb'
 import { FileMetadata, MediaType } from '@/types'
 
@@ -52,6 +53,12 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [publicUrl, setPublicUrl] = useState<string | null>(null)
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false)
+  // imageDimensions state is not strictly needed for auto-sizing,
+  // but could be used for more advanced layout if desired.
+  // Keeping it for now as it's not hurting.
+  const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number } | null>(null);
+
 
   useEffect(() => {
     if (!fileId) {
@@ -127,23 +134,59 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
         return (
           <Image
             source={{ uri: publicUrl }}
-            style={styles.image}
-            contentFit="cover"
+            // Apply base image style and any passed style.
+            // styles.image will now correctly handle auto height.
+            style={[styles.image, style]} 
+            contentFit="contain" // Ensures the whole image is visible
             transition={200}
             placeholder="📷"
+            // You can keep or remove onLoadEnd depending on if you need dimensions for other logic
+            // onLoadEnd={(event) => {
+            //   if (event.nativeEvent.width && event.nativeEvent.height) {
+            //     setImageDimensions({
+            //       width: event.nativeEvent.width,
+            //       height: event.nativeEvent.height,
+            //     });
+            //   }
+            // }}
           />
         )
       
       case 'video':
         return (
-          <Video
-            source={{ uri: publicUrl }}
-            style={styles.video}
-            controls={true}
-            resizeMode="contain"
-            paused={true}
-            poster={undefined}
-          />
+          // For video, you might want a fixed height for the container,
+          // or dynamically set it if you can fetch video dimensions.
+          // Your current setup uses `height: 300` in styles.videoContainer.
+          <View style={[styles.videoContainer, style]}>
+            <Video
+              source={{ uri: publicUrl }}
+              style={styles.video}
+              controls={false}
+              resizeMode="cover" // or 'contain' if you want black bars for aspect ratio
+              paused={!isVideoPlaying}
+              poster={undefined} // You might want a poster image for videos
+              onLoad={() => console.log('Video loaded')}
+              onError={(error) => console.error('Video error:', error)}
+            />
+            {!isVideoPlaying && (
+              <TouchableOpacity
+                style={styles.playButtonOverlay}
+                onPress={() => setIsVideoPlaying(true)}
+                activeOpacity={0.8}
+              >
+                <View style={styles.playButton}>
+                  <Ionicons name="play" size={28} color="white" style={styles.playIcon} />
+                </View>
+              </TouchableOpacity>
+            )}
+            {isVideoPlaying && (
+              <TouchableOpacity
+                style={styles.videoTouchArea}
+                onPress={() => setIsVideoPlaying(false)}
+                activeOpacity={1}
+              />
+            )}
+          </View>
         )
       
       case 'audio':
@@ -178,7 +221,9 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
   const Container = onPress ? TouchableOpacity : View
 
   return (
-    <Container style={[styles.container, style]} onPress={onPress}>
+    // Pass the style prop directly to the main container.
+    // Ensure the container using FilePreview doesn't impose a fixed height on it.
+    <Container style={[styles.container, style]} onPress={onPress}> 
       {renderContent()}
     </Container>
   )
@@ -190,11 +235,12 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: '#f5f5f5',
     maxWidth: '100%',
+    // The height of this container will now be determined by its content (the image)
   },
   centered: {
     justifyContent: 'center',
     alignItems: 'center',
-    height: 100,
+    height: 100, // This is for loading/error states, which is fine
   },
   errorContainer: {
     justifyContent: 'center',
@@ -207,16 +253,52 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   image: {
-    width: '100%',
-    height: 180,
-    backgroundColor: '#f0f0f0',
-    maxWidth: '100%',
+    // REMOVED: aspectRatio: 1,
+    // REMOVED: height: 200, // <--- THIS WAS THE PROBLEM! Removed to allow auto-sizing
+    width: '100%', // Makes the image fill the width of its container
+    height: 250, // Crucial: Allows height to be determined by contentFit and width
+    backgroundColor: '#f0f0f0', // Fallback background if image fails to load or during transitions
+    maxWidth: '100%', // Ensures it doesn't exceed parent's width (redundant with width: '100%' but harmless)
   },
   video: {
     width: '100%',
-    height: 180,
+    height: '100%',
     backgroundColor: '#f0f0f0',
-    maxWidth: '100%',
+  },
+  videoContainer: {
+    position: 'relative',
+    width: '100%',
+    height: 300, // This height is still fixed for videos. You might want to make this dynamic too.
+  },
+  playButtonOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  },
+  playButton: {
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    borderRadius: 35,
+    width: 70,
+    height: 70,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: 'white',
+  },
+  playIcon: {
+    marginLeft: 2, // Slight offset to center the triangle visually
+  },
+  videoTouchArea: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   mediaPlaceholder: {
     justifyContent: 'center',
@@ -227,6 +309,8 @@ const styles = StyleSheet.create({
     borderColor: '#e0e0e0',
     borderStyle: 'dashed',
     maxWidth: '100%',
+    // You might want to define a minHeight for placeholders to avoid them collapsing too much
+    minHeight: 150, 
   },
   mediaIcon: {
     fontSize: 32,
