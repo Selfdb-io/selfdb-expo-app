@@ -37,3 +37,7 @@ yarn-error.*
 *.tsbuildinfo
 
 app-example
+
+.env
+*.env
+!.env.example # If you have an example file you DO want to commit
