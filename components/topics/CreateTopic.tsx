@@ -27,6 +27,7 @@ interface CreateTopicProps {
   initialTopic?: Topic
   onEditComplete?: () => void
   onBack?: () => void
+  onTopicDeleted?: () => void
 }
 
 export const CreateTopic: React.FC<CreateTopicProps> = ({ 
@@ -34,7 +35,8 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
   onCancel,
   initialTopic,
   onEditComplete,
-  onBack
+  onBack,
+  onTopicDeleted
 }) => {
   const { user, isAuthenticated } = useAuth()
   const [title, setTitle] = useState('')
@@ -79,11 +81,7 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
       // Handle file replacement in edit mode
       if (selectedFile && isEditMode && initialTopic?.file_id) {
         try {
-          const buckets = await storage.buckets.listBuckets()
-          const discussionBucket = buckets.find(b => b.name === 'discussion')
-          if (discussionBucket) {
-            await storage.files.deleteFile(discussionBucket.id, initialTopic.file_id)
-          }
+          await storage.files.deleteFile('discussion', initialTopic.file_id)
         } catch (deleteError) {
           console.warn('Could not delete old file:', deleteError)
         }
@@ -262,11 +260,7 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
               setLoading(true)
               
               // Delete file from storage
-              const buckets = await storage.buckets.listBuckets()
-              const discussionBucket = buckets.find(b => b.name === 'discussion')
-              if (discussionBucket) {
-                await storage.files.deleteFile(discussionBucket.id, initialTopic.file_id!)
-              }
+              await storage.files.deleteFile('discussion', initialTopic.file_id!)
 
               // Update topic in database to remove file_id
               await db
@@ -305,11 +299,7 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
       // Delete attached file if it exists
       if (initialTopic.file_id) {
         try {
-          const buckets = await storage.buckets.listBuckets()
-          const discussionBucket = buckets.find(b => b.name === 'discussion')
-          if (discussionBucket) {
-            await storage.files.deleteFile(discussionBucket.id, initialTopic.file_id)
-          }
+          await storage.files.deleteFile('discussion', initialTopic.file_id)
         } catch (deleteError) {
           console.warn('Could not delete topic file:', deleteError)
           // Continue with topic deletion even if file deletion fails
@@ -334,6 +324,11 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
         .delete()
 
       Alert.alert('Success', 'Topic deleted successfully')
+
+      // Call onTopicDeleted to trigger refetch in parent component
+      if (onTopicDeleted) {
+        onTopicDeleted()
+      }
 
       // Navigate back
       if (onBack) {

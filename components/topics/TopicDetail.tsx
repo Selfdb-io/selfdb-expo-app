@@ -28,9 +28,10 @@ import { CreateTopic } from '@/components/topics/CreateTopic'
 interface TopicDetailProps {
   topicId: string
   onBack?: () => void
+  onTopicDeleted?: () => void
 }
 
-export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack }) => {
+export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTopicDeleted }) => {
   const { user, isAuthenticated } = useAuth()
   const [topic, setTopic] = useState<Topic | null>(null)
   const [comments, setComments] = useState<Comment[]>([])
@@ -80,6 +81,9 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack }) => 
                 {
                   text: 'OK',
                   onPress: () => {
+                    if (onTopicDeleted) {
+                      onTopicDeleted()
+                    }
                     if (onBack) {
                       onBack()
                     } else {
@@ -200,6 +204,23 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack }) => 
       Alert.alert('Error', 'Failed to load topic. Please check your connection and try again.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadComments = async () => {
+    try {
+      if (!topic) return
+      
+      // Load comments for this topic using proper query builder API
+      const commentsData = await db
+        .from('comments')
+        .where('topic_id', topic.id)
+        .order('created_at', 'asc')
+        .execute()
+      
+      setComments(commentsData as unknown as Comment[])
+    } catch (error) {
+      console.error('Failed to load comments:', error)
     }
   }
 
@@ -359,11 +380,7 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack }) => 
               setSubmitting(true)
               
               // Delete file from storage
-              const buckets = await storage.buckets.listBuckets()
-              const discussionBucket = buckets.find(b => b.name === 'discussion')
-              if (discussionBucket) {
-                await storage.files.deleteFile(discussionBucket.id, currentComment.file_id!)
-              }
+              await storage.files.deleteFile('discussion', currentComment.file_id!)
 
               // Update comment in database to remove file_id
               await db
@@ -414,11 +431,7 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack }) => 
         // Delete old file if it exists
         if (currentComment?.file_id) {
           try {
-            const buckets = await storage.buckets.listBuckets()
-            const discussionBucket = buckets.find(b => b.name === 'discussion')
-            if (discussionBucket) {
-              await storage.files.deleteFile(discussionBucket.id, currentComment.file_id)
-            }
+            await storage.files.deleteFile('discussion', currentComment.file_id)
           } catch (deleteError) {
             console.warn('Could not delete old comment file:', deleteError)
           }
@@ -484,11 +497,7 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack }) => 
       // Delete attached file if it exists
       if (commentToDelete.file_id) {
         try {
-          const buckets = await storage.buckets.listBuckets()
-          const discussionBucket = buckets.find(b => b.name === 'discussion')
-          if (discussionBucket) {
-            await storage.files.deleteFile(discussionBucket.id, (commentToDelete.file_id))
-          }
+          await storage.files.deleteFile('discussion', commentToDelete.file_id)
         } catch (deleteError) {
           console.warn('Could not delete comment file:', deleteError)
         }
@@ -500,8 +509,8 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack }) => 
         .where('id', commentToDelete.id)
         .delete()
 
-      // Update the local state
-      setComments(comments.filter(comment => comment.id !== commentToDelete.id))
+      // Refetch comments to ensure consistency
+      await loadComments()
       
       // Close the delete dialog
       setShowDeleteCommentDialog(false)
@@ -866,6 +875,15 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack }) => 
             onTopicCreated={handleTopicEdited}
             onCancel={() => setIsEditingTopic(false)}
             onEditComplete={() => setIsEditingTopic(false)}
+            onTopicDeleted={() => {
+              setIsEditingTopic(false)
+              if (onTopicDeleted) {
+                onTopicDeleted()
+              }
+              if (onBack) {
+                onBack()
+              }
+            }}
           />
         </View>
       </Modal>

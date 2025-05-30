@@ -224,7 +224,11 @@ export const TopicsList: React.FC<TopicsListProps> = ({
     return (
       <TopicDetail 
         topicId={selectedTopicId} 
-        onBack={() => setSelectedTopicId(null)} 
+        onBack={() => setSelectedTopicId(null)}
+        onTopicDeleted={() => {
+          setSelectedTopicId(null)
+          loadTopics() // Refetch topics after deletion
+        }}
       />
     )
   }
