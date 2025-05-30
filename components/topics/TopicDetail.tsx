@@ -9,10 +9,13 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
+  Modal,
+  KeyboardAvoidingView,
 } from 'react-native'
 import { Image } from 'expo-image'
 import * as ImagePicker from 'expo-image-picker'
 import { router } from 'expo-router'
+import { Ionicons } from '@expo/vector-icons'
 import { useAuth } from '@/contexts/AuthContext'
 import { db, storage } from '@/services/selfdb'
 import { Topic, Comment } from '@/types'
@@ -34,6 +37,7 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack }) => 
   const [authorName, setAuthorName] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [selectedFile, setSelectedFile] = useState<string | null>(null)
+  const [showAddComment, setShowAddComment] = useState(false)
 
   useEffect(() => {
     if (topicId) {
@@ -121,6 +125,7 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack }) => 
       setCommentText('')
       setAuthorName('')
       setSelectedFile(null)
+      setShowAddComment(false)
     } catch (error) {
       console.error('Failed to add comment:', error)
       Alert.alert('Error', 'Failed to add comment')
@@ -216,121 +221,154 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack }) => 
   }
 
   return (
-    <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-      {/* Topic Header with Back Button and Title */}
-      <View style={styles.topicContainer}>
-        <View style={styles.topicHeader}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => onBack ? onBack() : router.back()}
-          >
-            <Text style={styles.backButtonText}>← Back</Text>
-          </TouchableOpacity>
-          <Text style={styles.topicTitle}>{topic.title}</Text>
-        </View>
-        <Text style={styles.topicContent}>{topic.content}</Text>
-        {topic.file_id && (
-          <View style={styles.topicImageContainer}>
-            <FilePreview fileId={topic.file_id} style={styles.topicImage} />
+    <>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Topic Header with Back Button and Title */}
+        <View style={styles.topicContainer}>
+          <View style={styles.topicHeader}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => onBack ? onBack() : router.back()}
+            >
+              <Text style={styles.backButtonText}>← Back</Text>
+            </TouchableOpacity>
+            <Text style={styles.topicTitle}>{topic.title}</Text>
           </View>
-        )}
-        <View style={styles.topicMeta}>
-          <Text style={styles.author}>By {topic.author_name}</Text>
-          <Text style={styles.date}>{formatDate(topic.created_at)}</Text>
+          <Text style={styles.topicContent}>{topic.content}</Text>
+          {topic.file_id && (
+            <View style={styles.topicImageContainer}>
+              <FilePreview fileId={topic.file_id} style={styles.topicImage} />
+            </View>
+          )}
+          <View style={styles.topicMeta}>
+            <Text style={styles.author}>By {topic.author_name}</Text>
+            <Text style={styles.date}>{formatDate(topic.created_at)}</Text>
+          </View>
         </View>
-      </View>
 
-      {/* Comments */}
-      <View style={styles.commentsSection}>
-        <Text style={styles.commentsTitle}>
-          Comments ({comments.length})
-        </Text>
-        
-        {comments.map((comment) => (
-          <View key={comment.id} style={styles.commentCard}>
-            <Text style={styles.commentContent}>{comment.content}</Text>
-            {comment.file_id && (
-              <View style={styles.commentImageContainer}>
-                <FilePreview fileId={comment.file_id} style={styles.commentImage} />
+        {/* Comments */}
+        <View style={styles.commentsSection}>
+          <Text style={styles.commentsTitle}>
+            Comments ({comments.length})
+          </Text>
+          
+          {comments.map((comment) => (
+            <View key={comment.id} style={styles.commentCard}>
+              <Text style={styles.commentContent}>{comment.content}</Text>
+              {comment.file_id && (
+                <View style={styles.commentImageContainer}>
+                  <FilePreview fileId={comment.file_id} style={styles.commentImage} />
+                </View>
+              )}
+              <View style={styles.commentMeta}>
+                <Text style={styles.commentAuthor}>{comment.author_name}</Text>
+                <Text style={styles.commentDate}>
+                  {formatDate(comment.created_at)}
+                </Text>
               </View>
-            )}
-            <View style={styles.commentMeta}>
-              <Text style={styles.commentAuthor}>{comment.author_name}</Text>
-              <Text style={styles.commentDate}>
-                {formatDate(comment.created_at)}
-              </Text>
             </View>
-          </View>
-        ))}
-      </View>
-
-      {/* Add Comment Form */}
-      <View style={styles.addCommentSection}>
-        <Text style={styles.addCommentTitle}>Add a Comment</Text>
-        
-        <TextInput
-          style={[styles.input, styles.commentInput]}
-          placeholder="Write your comment..."
-          placeholderTextColor="#666"
-          value={commentText}
-          onChangeText={setCommentText}
-          multiline
-          numberOfLines={3}
-          textAlignVertical="top"
-        />
-        
-        {!isAuthenticated && (
-          <TextInput
-            style={styles.input}
-            placeholder="Your name"
-            placeholderTextColor="#666"
-            value={authorName}
-            onChangeText={setAuthorName}
-          />
-        )}
-
-        {/* File Upload Section */}
-        <View style={styles.fileSection}>
-          <TouchableOpacity
-            style={styles.uploadButton}
-            onPress={pickMedia}
-            disabled={submitting}
-          >
-            <Text style={styles.uploadButtonText}>
-              📷 Add Photo or Video
-            </Text>
-          </TouchableOpacity>
-
-          {selectedFile && (
-            <View style={styles.filePreview}>
-              <Image 
-                source={{ uri: selectedFile }} 
-                style={styles.previewImage}
-                contentFit="cover"
-              />
-              <TouchableOpacity
-                style={styles.removeFileButton}
-                onPress={removeFile}
-              >
-                <Text style={styles.removeFileText}>✕ Remove</Text>
-              </TouchableOpacity>
-            </View>
-          )}
+          ))}
         </View>
-        
-        <TouchableOpacity
-          style={[styles.submitButton, submitting && styles.buttonDisabled]}
-          onPress={handleAddComment}
-          disabled={submitting}
+      </ScrollView>
+
+      {/* Floating Add Comment Button */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => setShowAddComment(true)}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="chatbubble-ellipses" size={28} color="white" />
+      </TouchableOpacity>
+
+      {/* Add Comment Modal */}
+      <Modal
+        visible={showAddComment}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowAddComment(false)}
+      >
+        <KeyboardAvoidingView 
+          style={styles.modalContainer}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-          {submitting ? (
-            <ActivityIndicator color="white" size="small" />
-          ) : (
-            <Text style={styles.submitButtonText}>Add Comment</Text>
-          )}
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity
+              style={styles.modalCancelButton}
+              onPress={() => setShowAddComment(false)}
+            >
+              <Text style={styles.modalCancelText}>Cancel</Text>
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Add Comment</Text>
+            <TouchableOpacity
+              style={[styles.modalSubmitButton, submitting && styles.buttonDisabled]}
+              onPress={handleAddComment}
+              disabled={submitting}
+            >
+              {submitting ? (
+                <ActivityIndicator color="#007AFF" size="small" />
+              ) : (
+                <Text style={styles.modalSubmitText}>Post</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.modalContent} keyboardShouldPersistTaps="handled">
+            <TextInput
+              style={[styles.input, styles.commentInput]}
+              placeholder="Write your comment..."
+              placeholderTextColor="#666"
+              value={commentText}
+              onChangeText={setCommentText}
+              multiline
+              numberOfLines={6}
+              textAlignVertical="top"
+              autoFocus
+            />
+            
+            {!isAuthenticated && (
+              <TextInput
+                style={styles.input}
+                placeholder="Your name"
+                placeholderTextColor="#666"
+                value={authorName}
+                onChangeText={setAuthorName}
+              />
+            )}
+
+            {/* File Upload Section */}
+            <View style={styles.fileSection}>
+              <TouchableOpacity
+                style={styles.uploadButton}
+                onPress={pickMedia}
+                disabled={submitting}
+              >
+                <View style={styles.uploadButtonContent}>
+                  <Ionicons name="camera" size={20} color="#007AFF" style={styles.uploadIcon} />
+                  <Text style={styles.uploadButtonText}>Add Photo or Video</Text>
+                </View>
+              </TouchableOpacity>
+
+              {selectedFile && (
+                <View style={styles.filePreview}>
+                  <Image 
+                    source={{ uri: selectedFile }} 
+                    style={styles.previewImage}
+                    contentFit="cover"
+                  />
+                  <TouchableOpacity
+                    style={styles.removeFileButton}
+                    onPress={removeFile}
+                  >
+                    <Ionicons name="close-circle" size={20} color="white" />
+                    <Text style={styles.removeFileText}>Remove</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </Modal>
+    </>
   )
 }
 
@@ -500,6 +538,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 10,
   },
+  uploadButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   uploadButtonText: {
     color: '#007AFF',
     fontSize: 16,
@@ -524,10 +566,79 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
   },
   removeFileText: {
     color: 'white',
     fontSize: 14,
     fontWeight: '500',
+  },
+  // Floating Action Button styles
+  fab: {
+    position: 'absolute',
+    width: 56,
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    right: 20,
+    bottom: 20,
+    backgroundColor: '#007AFF',
+    borderRadius: 28,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4.65,
+    zIndex: 1000,
+  },
+  // Modal styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  modalCancelButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  modalCancelText: {
+    color: '#007AFF',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  modalSubmitButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  modalSubmitText: {
+    color: '#007AFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalContent: {
+    flex: 1,
+    padding: 20,
+  },
+  uploadIcon: {
+    marginRight: 8,
   },
 })
