@@ -35,29 +35,29 @@ export default function TopicDetailScreen() {
 
   const loadTopicAndComments = async () => {
     try {
-      // Load topic
-      const topicsResult = await db
-        .from('topics')
-        .select('*')
-        .execute()
+      setLoading(true)
       
-      const foundTopic = (topicsResult as unknown as Topic[]).find(t => t.id.toString() === id)
-      if (!foundTopic) {
+      // Load topic using proper query builder API
+      const topicData = await db
+        .from('topics')
+        .where('id', id)
+        .single()
+      
+      if (!topicData) {
         throw new Error('Topic not found')
       }
-      setTopic(foundTopic)
+      
+      const loadedTopic = topicData as unknown as Topic
+      setTopic(loadedTopic)
 
-      // Load comments
-      const commentsResult = await db
+      // Load comments for this topic using proper query builder API
+      const commentsData = await db
         .from('comments')
-        .select('*')
+        .where('topic_id', loadedTopic.id)
+        .order('created_at', 'asc')
         .execute()
       
-      const topicComments = (commentsResult as unknown as Comment[])
-        .filter(c => c.topic_id.toString() === id)
-        .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-      
-      setComments(topicComments)
+      setComments(commentsData as unknown as Comment[])
     } catch (error) {
       console.error('Failed to load topic and comments:', error)
       Alert.alert('Error', 'Failed to load topic')
@@ -77,22 +77,20 @@ export default function TopicDetailScreen() {
       return
     }
 
+    if (!topic) return
+
     setSubmitting(true)
 
     try {
       const commentData = {
-        topic_id: parseInt(id!),
+        topic_id: topic.id,
         content: commentText.trim(),
         author_name: isAuthenticated ? user!.email : authorName.trim(),
         user_id: isAuthenticated ? user!.id : undefined,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
       }
 
-      await db.from('comments').insert(commentData)
-      
-      // Reload comments to get the latest data
-      await loadTopicAndComments()
+      const newComment = await db.from('comments').insert(commentData) as unknown as Comment
+      setComments(prev => [...prev, newComment])
       
       setCommentText('')
       setAuthorName('')
