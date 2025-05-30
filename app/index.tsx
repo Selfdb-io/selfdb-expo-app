@@ -53,36 +53,15 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ThemedView style={styles.header}>
-        <ThemedText type="subtitle">Open Disscussion Board</ThemedText>
-        <View style={styles.headerActions}>
-          {isAuthenticated ? (
-            <View style={styles.userSection}>
-              <View style={styles.userAvatar}>
-                <Text style={styles.userAvatarText}>
-                  {user?.email?.charAt(0).toUpperCase()}
-                </Text>
-              </View>
-              <TouchableOpacity
-                style={styles.logoutButton}
-                onPress={handleLogout}
-              >
-                <Ionicons name="log-out" size={20} color="white" />
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <TouchableOpacity
-              style={styles.loginButton}
-              onPress={() => setShowAuthModal(true)}
-            >
-              <Ionicons name="person-circle" size={24} color="white" />
-            </TouchableOpacity>
-          )}
-        </View>
-      </ThemedView>
-
       <View style={styles.content}>
-        <TopicsList onCreateTopic={() => setShowCreateTopic(true)} />
+        <TopicsList 
+          onCreateTopic={() => setShowCreateTopic(true)} 
+          showHeader={true}
+          onShowAuthModal={() => setShowAuthModal(true)}
+          onLogout={handleLogout}
+          user={user}
+          isAuthenticated={isAuthenticated}
+        />
       </View>
 
       <AuthModal
@@ -102,65 +81,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  userSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  userAvatar: {
-    backgroundColor: '#007AFF',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  userAvatarText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  userEmail: {
-    fontSize: 14,
-    color: '#666',
-  },
-  logoutButton: {
-    backgroundColor: '#ff4757',
-    padding: 8,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 40,
-    height: 40,
-  },
-  logoutButtonText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  loginButton: {
-    backgroundColor: '#007AFF',
-    padding: 8,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 40,
-    height: 40,
   },
   content: {
     flex: 1,

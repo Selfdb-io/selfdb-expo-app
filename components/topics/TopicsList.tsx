@@ -10,17 +10,32 @@ import {
   RefreshControl,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { db } from '@/services/selfdb'
 import { Topic } from '@/types'
 import { formatDate } from '@/lib/utils'
 import { FilePreview } from '../FilePreview'
 import { TopicDetail } from './TopicDetail'
+import { ThemedText } from '@/components/ThemedText'
+import { ThemedView } from '@/components/ThemedView'
 
 interface TopicsListProps {
   onCreateTopic?: () => void
+  showHeader?: boolean
+  onShowAuthModal?: () => void
+  onLogout?: () => void
+  user?: any
+  isAuthenticated?: boolean
 }
 
-export const TopicsList: React.FC<TopicsListProps> = ({ onCreateTopic }) => {
+export const TopicsList: React.FC<TopicsListProps> = ({ 
+  onCreateTopic, 
+  showHeader = false,
+  onShowAuthModal,
+  onLogout,
+  user,
+  isAuthenticated
+}) => {
   const [topics, setTopics] = useState<Topic[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -42,14 +57,15 @@ export const TopicsList: React.FC<TopicsListProps> = ({ onCreateTopic }) => {
       // Clear visible topics and gradually show them with 100ms delay
       setVisibleTopics(new Set())
       
-      // Add 100ms delay to ensure media loads with text content
+      // Add 100ms delay to ensure media loads with text content, then hide loading
       setTimeout(() => {
         const topicIds = new Set(topicsData.map((topic: any) => topic.id.toString()))
         setVisibleTopics(topicIds)
+        setLoading(false)
+        setRefreshing(false)
       }, 100)
     } catch (error) {
       console.error('Failed to load topics:', error)
-    } finally {
       setLoading(false)
       setRefreshing(false)
     }
@@ -135,6 +151,38 @@ export const TopicsList: React.FC<TopicsListProps> = ({ onCreateTopic }) => {
 
   return (
     <View style={styles.container}>
+      {/* Header - only show when showHeader is true */}
+      {showHeader && (
+        <ThemedView style={styles.header}>
+          <ThemedText type="subtitle">Open Discussion Board</ThemedText>
+          <View style={styles.headerActions}>
+            {isAuthenticated ? (
+              <View style={styles.userSection}>
+                <View style={styles.userAvatar}>
+                  <Text style={styles.userAvatarText}>
+                    {user?.email?.charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.logoutButton}
+                  onPress={onLogout}
+                >
+                  <Ionicons name="log-out" size={20} color="white" />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={styles.loginButton}
+                onPress={onShowAuthModal}
+              >
+                <Ionicons name="person-circle" size={24} color="white" />
+              </TouchableOpacity>
+            )}
+          </View>
+        </ThemedView>
+      )}
+      
+      {/* Topics List */}
       <FlatList
         data={topics}
         keyExtractor={(item) => item.id.toString()}
@@ -291,5 +339,55 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 4.65,
     zIndex: 1000,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  userSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  userAvatar: {
+    backgroundColor: '#007AFF',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  userAvatarText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  logoutButton: {
+    backgroundColor: '#ff4757',
+    padding: 8,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 40,
+    height: 40,
+  },
+  loginButton: {
+    backgroundColor: '#007AFF',
+    padding: 8,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 40,
+    height: 40,
   },
 })
