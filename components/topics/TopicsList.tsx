@@ -241,7 +241,8 @@ export const TopicsList: React.FC<TopicsListProps> = ({
         <ThemedView style={styles.header}>
           <View style={styles.logoContainer}>
             <SvgComponent width={32} height={32} />
-            
+              <ThemedText type="default">Open Discussion Board</ThemedText>
+
           </View>
           <View style={styles.headerActions}>
             {isAuthenticated ? (
