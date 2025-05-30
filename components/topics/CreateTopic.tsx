@@ -28,6 +28,7 @@ interface CreateTopicProps {
   onEditComplete?: () => void
   onBack?: () => void
   onTopicDeleted?: () => void
+  onTopicUpdated?: () => void
 }
 
 export const CreateTopic: React.FC<CreateTopicProps> = ({ 
@@ -36,7 +37,8 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
   initialTopic,
   onEditComplete,
   onBack,
-  onTopicDeleted
+  onTopicDeleted,
+  onTopicUpdated
 }) => {
   const { user, isAuthenticated } = useAuth()
   const [title, setTitle] = useState('')
@@ -130,6 +132,11 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
           }
 
           onTopicCreated(updatedTopic)
+          
+          // Call onTopicUpdated to trigger refetch in parent component  
+          if (onTopicUpdated) {
+            onTopicUpdated()
+          }
           
           if (onEditComplete) {
             onEditComplete()
@@ -260,7 +267,15 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
               setLoading(true)
               
               // Delete file from storage
-              await storage.files.deleteFile('discussion', initialTopic.file_id!)
+                // Delete attached file if it exists
+              if (initialTopic.file_id) {
+                try {
+                  await storage.files.deleteFile('discussion', initialTopic.file_id)
+                } catch (deleteError) {
+                  console.warn('Could not delete topic file:', deleteError)
+                  // Continue with topic deletion even if file deletion fails
+                }
+              }
 
               // Update topic in database to remove file_id
               await db
@@ -276,6 +291,11 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
               
               onTopicCreated(updatedTopic)
               setUploadedFileId(null)
+              
+              // Call onTopicUpdated to trigger refetch in parent component
+              if (onTopicUpdated) {
+                onTopicUpdated()
+              }
               
               Alert.alert('Success', 'Attachment removed successfully')
             } catch (error) {

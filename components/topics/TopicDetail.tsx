@@ -884,6 +884,12 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTop
                 onBack()
               }
             }}
+            onTopicUpdated={() => {
+              // Trigger refetch in parent TopicsList component
+              if (onTopicDeleted) {
+                onTopicDeleted()
+              }
+            }}
           />
         </View>
       </Modal>
