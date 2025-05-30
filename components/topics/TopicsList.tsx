@@ -9,16 +9,17 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native'
-import { router } from 'expo-router'
 import { db } from '@/services/selfdb'
 import { Topic } from '@/types'
 import { formatDate } from '@/lib/utils'
 import { FilePreview } from '../FilePreview'
+import { TopicDetail } from './TopicDetail'
 
 export const TopicsList: React.FC = () => {
   const [topics, setTopics] = useState<Topic[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null)
 
   const loadTopics = async () => {
     try {
@@ -49,7 +50,7 @@ export const TopicsList: React.FC = () => {
   }
 
   const handleTopicPress = (topic: Topic) => {
-    router.push(`/topic/${topic.id}`)
+    setSelectedTopicId(topic.id.toString())
   }
 
   const renderTopic = ({ item }: { item: Topic }) => (
@@ -84,6 +85,16 @@ export const TopicsList: React.FC = () => {
         <ActivityIndicator size="large" color="#007AFF" />
         <Text style={styles.loadingText}>Loading topics...</Text>
       </View>
+    )
+  }
+
+  // Show topic detail if a topic is selected
+  if (selectedTopicId) {
+    return (
+      <TopicDetail 
+        topicId={selectedTopicId} 
+        onBack={() => setSelectedTopicId(null)} 
+      />
     )
   }
 

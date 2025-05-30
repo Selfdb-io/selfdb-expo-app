@@ -9,16 +9,19 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native'
-import { useLocalSearchParams, router } from 'expo-router'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { router } from 'expo-router'
 import { useAuth } from '@/contexts/AuthContext'
 import { db } from '@/services/selfdb'
 import { Topic, Comment } from '@/types'
 import { formatDate } from '@/lib/utils'
 import { FilePreview } from '@/components/FilePreview'
 
-export default function TopicDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>()
+interface TopicDetailProps {
+  topicId: string
+  onBack?: () => void
+}
+
+export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack }) => {
   const { user, isAuthenticated } = useAuth()
   const [topic, setTopic] = useState<Topic | null>(null)
   const [comments, setComments] = useState<Comment[]>([])
@@ -28,10 +31,10 @@ export default function TopicDetailScreen() {
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
-    if (id) {
+    if (topicId) {
       loadTopicAndComments()
     }
-  }, [id])
+  }, [topicId])
 
   const loadTopicAndComments = async () => {
     try {
@@ -40,7 +43,7 @@ export default function TopicDetailScreen() {
       // Load topic using proper query builder API
       const topicData = await db
         .from('topics')
-        .where('id', id)
+        .where('id', topicId)
         .single()
       
       if (!topicData) {
@@ -104,127 +107,120 @@ export default function TopicDetailScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>Loading topic...</Text>
-        </View>
-      </SafeAreaView>
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color="#007AFF" />
+        <Text style={styles.loadingText}>Loading topic...</Text>
+      </View>
     )
   }
 
   if (!topic) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.centered}>
-          <Text style={styles.errorText}>Topic not found</Text>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <Text style={styles.backButtonText}>Go Back</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+      <View style={styles.centered}>
+        <Text style={styles.errorText}>Topic not found</Text>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => onBack ? onBack() : router.back()}
+        >
+          <Text style={styles.backButtonText}>Go Back</Text>
+        </TouchableOpacity>
+      </View>
     )
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Topic Header with Back Button and Title */}
-        <View style={styles.topicContainer}>
-          <View style={styles.topicHeader}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => router.back()}
-            >
-              <Text style={styles.backButtonText}>← Back</Text>
-            </TouchableOpacity>
-            <Text style={styles.topicTitle}>{topic.title}</Text>
-          </View>
-          <Text style={styles.topicContent}>{topic.content}</Text>
-          {topic.file_id && (
-            <View style={styles.topicImageContainer}>
-              <FilePreview fileId={topic.file_id} style={styles.topicImage} />
-            </View>
-          )}
-          <View style={styles.topicMeta}>
-            <Text style={styles.author}>By {topic.author_name}</Text>
-            <Text style={styles.date}>{formatDate(topic.created_at)}</Text>
-          </View>
-        </View>
-
-        {/* Comments */}
-        <View style={styles.commentsSection}>
-          <Text style={styles.commentsTitle}>
-            Comments ({comments.length})
-          </Text>
-          
-          {comments.map((comment) => (
-            <View key={comment.id} style={styles.commentCard}>
-              <Text style={styles.commentContent}>{comment.content}</Text>
-              {comment.file_id && (
-                <View style={styles.commentImageContainer}>
-                  <FilePreview fileId={comment.file_id} style={styles.commentImage} />
-                </View>
-              )}
-              <View style={styles.commentMeta}>
-                <Text style={styles.commentAuthor}>{comment.author_name}</Text>
-                <Text style={styles.commentDate}>
-                  {formatDate(comment.created_at)}
-                </Text>
-              </View>
-            </View>
-          ))}
-        </View>
-
-        {/* Add Comment Form */}
-        <View style={styles.addCommentSection}>
-          <Text style={styles.addCommentTitle}>Add a Comment</Text>
-          
-          <TextInput
-            style={[styles.input, styles.commentInput]}
-            placeholder="Write your comment..."
-            placeholderTextColor="#666"
-            value={commentText}
-            onChangeText={setCommentText}
-            multiline
-            numberOfLines={3}
-            textAlignVertical="top"
-          />
-          
-          {!isAuthenticated && (
-            <TextInput
-              style={styles.input}
-              placeholder="Your name"
-              placeholderTextColor="#666"
-              value={authorName}
-              onChangeText={setAuthorName}
-            />
-          )}
-          
+    <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      {/* Topic Header with Back Button and Title */}
+      <View style={styles.topicContainer}>
+        <View style={styles.topicHeader}>
           <TouchableOpacity
-            style={[styles.submitButton, submitting && styles.buttonDisabled]}
-            onPress={handleAddComment}
-            disabled={submitting}
+            style={styles.backButton}
+            onPress={() => onBack ? onBack() : router.back()}
           >
-            {submitting ? (
-              <ActivityIndicator color="white" size="small" />
-            ) : (
-              <Text style={styles.submitButtonText}>Add Comment</Text>
-            )}
+            <Text style={styles.backButtonText}>← Back</Text>
           </TouchableOpacity>
+          <Text style={styles.topicTitle}>{topic.title}</Text>
         </View>
-      </ScrollView>
-    </SafeAreaView>
+        <Text style={styles.topicContent}>{topic.content}</Text>
+        {topic.file_id && (
+          <View style={styles.topicImageContainer}>
+            <FilePreview fileId={topic.file_id} style={styles.topicImage} />
+          </View>
+        )}
+        <View style={styles.topicMeta}>
+          <Text style={styles.author}>By {topic.author_name}</Text>
+          <Text style={styles.date}>{formatDate(topic.created_at)}</Text>
+        </View>
+      </View>
+
+      {/* Comments */}
+      <View style={styles.commentsSection}>
+        <Text style={styles.commentsTitle}>
+          Comments ({comments.length})
+        </Text>
+        
+        {comments.map((comment) => (
+          <View key={comment.id} style={styles.commentCard}>
+            <Text style={styles.commentContent}>{comment.content}</Text>
+            {comment.file_id && (
+              <View style={styles.commentImageContainer}>
+                <FilePreview fileId={comment.file_id} style={styles.commentImage} />
+              </View>
+            )}
+            <View style={styles.commentMeta}>
+              <Text style={styles.commentAuthor}>{comment.author_name}</Text>
+              <Text style={styles.commentDate}>
+                {formatDate(comment.created_at)}
+              </Text>
+            </View>
+          </View>
+        ))}
+      </View>
+
+      {/* Add Comment Form */}
+      <View style={styles.addCommentSection}>
+        <Text style={styles.addCommentTitle}>Add a Comment</Text>
+        
+        <TextInput
+          style={[styles.input, styles.commentInput]}
+          placeholder="Write your comment..."
+          placeholderTextColor="#666"
+          value={commentText}
+          onChangeText={setCommentText}
+          multiline
+          numberOfLines={3}
+          textAlignVertical="top"
+        />
+        
+        {!isAuthenticated && (
+          <TextInput
+            style={styles.input}
+            placeholder="Your name"
+            placeholderTextColor="#666"
+            value={authorName}
+            onChangeText={setAuthorName}
+          />
+        )}
+        
+        <TouchableOpacity
+          style={[styles.submitButton, submitting && styles.buttonDisabled]}
+          onPress={handleAddComment}
+          disabled={submitting}
+        >
+          {submitting ? (
+            <ActivityIndicator color="white" size="small" />
+          ) : (
+            <Text style={styles.submitButtonText}>Add Comment</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
+  content: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   centered: {
     flex: 1,
@@ -241,13 +237,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginBottom: 20,
   },
-  header: {
-    backgroundColor: 'white',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
   topicHeader: {
     marginBottom: 15,
   },
@@ -259,9 +248,6 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     fontSize: 16,
     fontWeight: '500',
-  },
-  content: {
-    flex: 1,
   },
   topicContainer: {
     backgroundColor: 'white',
