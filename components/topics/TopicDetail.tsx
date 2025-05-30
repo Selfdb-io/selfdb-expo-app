@@ -415,18 +415,16 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   topicTitle: {
-    fontSize: 28,
-    fontWeight: 'semibold',
+    fontSize: 18,
+    fontWeight: 'bold',
     color: '#333',
-    marginBottom: 15,
-    lineHeight: 34,
-    marginTop: 0,
+    marginBottom: 8,
   },
   topicContent: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#666',
-    lineHeight: 24,
-    marginBottom: 20,
+    marginBottom: 10,
+    lineHeight: 20,
   },
   topicImageContainer: {
     marginBottom: 10,
@@ -442,12 +440,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   author: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#007AFF',
     fontWeight: '500',
   },
   date: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#999',
   },
   commentsSection: {
