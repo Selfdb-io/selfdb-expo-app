@@ -293,17 +293,14 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTop
               <View style={styles.commentHeader}>
                 <View style={styles.commentContentContainer}>
                   <Text style={styles.commentContent}>{comment.content}</Text>
-                  {comment.file_id && (
-                    <View style={styles.commentImageContainer}>
-                      <FilePreview fileId={comment.file_id} style={styles.commentImage} />
+                  {!comment.file_id && (
+                    <View style={styles.commentMeta}>
+                      <Text style={styles.commentAuthor}>{comment.author_name}</Text>
+                      <Text style={styles.commentDate}>
+                        {formatDate(comment.created_at)}
+                      </Text>
                     </View>
                   )}
-                  <View style={styles.commentMeta}>
-                    <Text style={styles.commentAuthor}>{comment.author_name}</Text>
-                    <Text style={styles.commentDate}>
-                      {formatDate(comment.created_at)}
-                    </Text>
-                  </View>
                 </View>
                 <CommentActions
                   comment={comment}
@@ -311,6 +308,19 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTop
                   onCommentDeleted={handleCommentDeleted}
                 />
               </View>
+              {comment.file_id && (
+                <>
+                  <View style={styles.commentImageContainer}>
+                    <FilePreview fileId={comment.file_id} style={styles.commentImage} />
+                  </View>
+                  <View style={styles.commentMetaWithFile}>
+                    <Text style={styles.commentAuthor}>{comment.author_name}</Text>
+                    <Text style={styles.commentDate}>
+                      {formatDate(comment.created_at)}
+                    </Text>
+                  </View>
+                </>
+              )}
             </View>
           ))}
         </View>
@@ -471,17 +481,24 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   commentImageContainer: {
+    marginTop: 10,
     marginBottom: 10,
   },
   commentImage: {
-    borderRadius: 6,
-    minHeight: 100,
-    maxHeight: 300,
+    borderRadius: 8,
+    minHeight: 150,
+    maxHeight: 400,
   },
   commentMeta: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  commentMetaWithFile: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 10,
   },
   commentAuthor: {
     fontSize: 12,
