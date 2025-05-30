@@ -1,0 +1,746 @@
+import React, { useState, useEffect } from 'react'
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  ActivityIndicator,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  Modal,
+} from 'react-native'
+import { Image } from 'expo-image'
+import { useAuth } from '@/contexts/AuthContext'
+import { db, storage } from '@/services/selfdb'
+import { Comment } from '@/types'
+import { showMediaPickerOptions, safeLaunchCamera, safeLaunchImageLibrary } from '@/lib/deviceUtils'
+import { FilePreview } from '@/components/FilePreview'
+import { Ionicons } from '@expo/vector-icons'
+
+interface CreateCommentProps {
+  topicId: string
+  onCommentCreated: (comment: Comment) => void
+  onCancel: () => void
+  initialComment?: Comment
+  onEditComplete?: () => void
+  onCommentDeleted?: () => void
+  onCommentUpdated?: () => void
+}
+
+export const CreateComment: React.FC<CreateCommentProps> = ({ 
+  topicId,
+  onCommentCreated, 
+  onCancel,
+  initialComment,
+  onEditComplete,
+  onCommentDeleted,
+  onCommentUpdated
+}) => {
+  const { user, isAuthenticated } = useAuth()
+  const [content, setContent] = useState('')
+  const [authorName, setAuthorName] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<string | null>(null)
+  const [uploadedFileId, setUploadedFileId] = useState<string | null>(null)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [removeCurrentFile, setRemoveCurrentFile] = useState(false)
+  const isEditMode = !!initialComment
+
+  useEffect(() => {
+    if (initialComment) {
+      setContent(initialComment.content)
+      setAuthorName(initialComment.author_name)
+      setUploadedFileId(initialComment.file_id || null)
+    }
+  }, [initialComment])
+
+  const handleSubmit = async () => {
+    if (!content.trim()) {
+      Alert.alert('Error', 'Please enter a comment')
+      return
+    }
+
+    if (!isAuthenticated && !authorName.trim()) {
+      Alert.alert('Error', 'Please enter your name')
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      let fileId = uploadedFileId
+
+      // Upload new file if one is selected but not yet uploaded
+      if (selectedFile && !uploadedFileId) {
+        try {
+          // Create a File object from the URI
+          const fileInfo = await fetch(selectedFile)
+          const blob = await fileInfo.blob()
+          const fileName = selectedFile.split('/').pop() || 'file'
+          
+          const file = new File([blob], fileName, {
+            type: blob.type || 'application/octet-stream'
+          })
+          
+          const uploadResult = await storage.upload('discussion', file)
+          fileId = uploadResult.file.id.toString()
+        } catch (uploadError) {
+          console.error('Failed to upload file:', uploadError)
+          Alert.alert('Error', 'Failed to upload file. Please try again.')
+          setLoading(false)
+          return
+        }
+      }
+
+      if (isEditMode && initialComment) {
+        // Update comment
+        let finalFileId = fileId
+
+        // Handle file removal if user marked current file for removal
+        if (removeCurrentFile && !selectedFile) {
+          finalFileId = null
+        }
+
+        const updatedCommentData = {
+          content: content.trim(),
+          file_id: finalFileId
+        }
+
+        try {
+          await db
+            .from('comments')
+            .where('id', initialComment.id)
+            .update(updatedCommentData)
+
+          // Delete old file only after successful update and if we're replacing with a new file OR removing it
+          if (initialComment.file_id && (
+            (selectedFile && fileId !== initialComment.file_id) || // Replacing with new file
+            (removeCurrentFile && !selectedFile) // Removing current file
+          )) {
+            try {
+              await storage.files.deleteFile('discussion', initialComment.file_id)
+            } catch (deleteError) {
+              console.warn('Could not delete old file:', deleteError)
+              // Continue even if old file deletion fails
+            }
+          }
+
+          const updatedComment: Comment = {
+            ...initialComment,
+            ...updatedCommentData,
+            file_id: updatedCommentData.file_id || undefined
+          }
+
+          onCommentCreated(updatedComment)
+          
+          // Call onCommentUpdated to trigger refetch in parent component  
+          if (onCommentUpdated) {
+            onCommentUpdated()
+          }
+          
+          if (onEditComplete) {
+            onEditComplete()
+          }
+        } catch (updateError) {
+          console.error('Failed to update comment in database:', updateError)
+          throw new Error('Database update failed')
+        }
+      } else {
+        // Create new comment
+        const commentData = {
+          topic_id: topicId,
+          content: content.trim(),
+          author_name: isAuthenticated ? user!.email : authorName.trim(),
+          user_id: isAuthenticated ? user!.id : undefined,
+          file_id: fileId || null
+        }
+
+        console.log('Creating comment with data:', commentData)
+        try {
+          const newComment = await db.from('comments').insert(commentData) as unknown as Comment
+          console.log('Comment created:', newComment)
+          
+          onCommentCreated(newComment)
+        } catch (createError) {
+          console.error('Failed to create comment in database:', createError)
+          throw new Error('Failed to create comment')
+        }
+      }
+      
+      // Reset form
+      setContent('')
+      setAuthorName('')
+      setSelectedFile(null)
+      setUploadedFileId(null)
+      setRemoveCurrentFile(false)
+      onCancel()
+    } catch (error) {
+      console.error(`Failed to ${isEditMode ? 'update' : 'create'} comment:`, error)
+      Alert.alert('Error', `Failed to ${isEditMode ? 'update' : 'create'} comment. Please try again.`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const pickMedia = async () => {
+    try {
+      const options = await showMediaPickerOptions(openCamera, openLibrary)
+      
+      Alert.alert(
+        'Select Media',
+        'Choose how you want to add media',
+        options
+      )
+    } catch (error) {
+      console.error('Error showing media options:', error)
+      Alert.alert('Error', 'Failed to show media options.')
+    }
+  }
+
+  const openCamera = async () => {
+    try {
+      const result = await safeLaunchCamera()
+      
+      if (!result) {
+        Alert.alert(
+          'Camera Error', 
+          'Failed to open camera. This might be because you\'re using a simulator. Please try using Photo Library instead.'
+        )
+        return
+      }
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0]
+        setSelectedFile(asset.uri)
+        setUploadedFileId(null)
+      }
+    } catch (error) {
+      console.error('Error opening camera:', error)
+      Alert.alert(
+        'Camera Error', 
+        'Failed to open camera. This might be because you\'re using a simulator. Please try using Photo Library instead.'
+      )
+    }
+  }
+
+  const openLibrary = async () => {
+    try {
+      const result = await safeLaunchImageLibrary()
+      
+      if (!result) {
+        Alert.alert('Error', 'Failed to access photo library. Please check permissions.')
+        return
+      }
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0]
+        setSelectedFile(asset.uri)
+        setUploadedFileId(null)
+      }
+    } catch (error) {
+      console.error('Error picking from library:', error)
+      Alert.alert('Error', 'Failed to pick media file.')
+    }
+  }
+
+  const removeFile = () => {
+    setSelectedFile(null)
+    setUploadedFileId(null)
+  }
+
+  const handleRemoveCurrentFile = () => {
+    setRemoveCurrentFile(true)
+    setUploadedFileId(null)
+  }
+
+  const handleDeleteComment = async () => {
+    if (!initialComment) return
+
+    try {
+      setLoading(true)
+
+      // Delete attached file if it exists
+      if (initialComment.file_id) {
+        try {
+          await storage.files.deleteFile('discussion', initialComment.file_id)
+        } catch (deleteError) {
+          console.warn('Could not delete comment file:', deleteError)
+          // Continue with comment deletion even if file deletion fails
+        }
+      }
+
+      // Delete comment using query builder API
+      await db
+        .from('comments')
+        .where('id', initialComment.id)
+        .delete()
+
+      Alert.alert('Success', 'Comment deleted successfully')
+
+      // Call onCommentDeleted to update parent component
+      if (onCommentDeleted) {
+        onCommentDeleted()
+      }
+
+      // Close modal
+      onCancel()
+    } catch (error) {
+      console.error('Failed to delete comment:', error)
+      Alert.alert('Error', 'Failed to delete comment. Please try again.')
+    } finally {
+      setLoading(false)
+      setShowDeleteDialog(false)
+    }
+  }
+
+  return (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.container}
+    >
+      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+        <View style={styles.content}>
+          {/* Header with cancel button */}
+          <View style={styles.header}>
+            <TouchableOpacity
+              style={styles.cancelHeaderButton}
+              onPress={onCancel}
+              disabled={loading}
+            >
+              <Ionicons name="close" size={24} color="#007AFF" />
+            </TouchableOpacity>
+            <Text style={styles.title}>{isEditMode ? 'Edit Comment' : 'Add Comment'}</Text>
+            {isEditMode ? (
+              <TouchableOpacity
+                style={styles.deleteHeaderButton}
+                onPress={() => setShowDeleteDialog(true)}
+                disabled={loading}
+              >
+                <Ionicons name="trash" size={24} color="#ff4757" />
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.placeholder} />
+            )}
+          </View>
+          
+          <View style={styles.form}>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              placeholder="Write your comment..."
+              placeholderTextColor="#666"
+              value={content}
+              onChangeText={setContent}
+              multiline
+              numberOfLines={6}
+              textAlignVertical="top"
+              autoFocus
+            />
+            
+            {!isAuthenticated && !isEditMode && (
+              <TextInput
+                style={styles.input}
+                placeholder="Your name"
+                placeholderTextColor="#666"
+                value={authorName}
+                onChangeText={setAuthorName}
+              />
+            )}
+
+            {/* File Upload Section */}
+            <View style={styles.fileSection}>
+              <TouchableOpacity
+                style={styles.uploadButton}
+                onPress={pickMedia}
+                disabled={loading}
+              >
+                <Text style={styles.uploadButtonText}>
+                  📷 {isEditMode && initialComment?.file_id ? 'Replace Photo or Video' : 'Add Photo or Video'}
+                </Text>
+              </TouchableOpacity>
+
+              {selectedFile && (
+                <View style={styles.filePreview}>
+                  {/* Use FilePreview component for better handling of videos and other media types */}
+                  <FilePreview 
+                    localUri={selectedFile}
+                    style={styles.previewImage}
+                  />
+                  <TouchableOpacity
+                    style={styles.removeFileButton}
+                    onPress={removeFile}
+                  >
+                    <Text style={styles.removeFileText}>✕ Remove</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+              
+              {/* Show current file if editing and no new file selected */}
+              {isEditMode && initialComment?.file_id && !selectedFile && !removeCurrentFile && (
+                <View style={styles.currentFilePreview}>
+                  <View style={styles.currentFileHeader}>
+                    <Text style={styles.currentFileText}>Current attachment:</Text>
+                    <TouchableOpacity
+                      style={styles.removeCurrentFileButton}
+                      onPress={handleRemoveCurrentFile}
+                      disabled={loading}
+                    >
+                      <Ionicons name="close-circle" size={20} color="#ff4757" />
+                      <Text style={styles.removeCurrentFileText}>Remove</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <FilePreview fileId={initialComment.file_id} style={styles.currentFileImage} />
+                </View>
+              )}
+
+              {/* Show removal notice if file is marked for removal */}
+              {isEditMode && initialComment?.file_id && !selectedFile && removeCurrentFile && (
+                <View style={styles.removalNotice}>
+                  <View style={styles.removalHeader}>
+                    <Ionicons name="warning" size={20} color="#ff4757" />
+                    <Text style={styles.removalText}>Attachment will be removed when you update</Text>
+                    <TouchableOpacity
+                      style={styles.undoRemovalButton}
+                      onPress={() => setRemoveCurrentFile(false)}
+                      disabled={loading}
+                    >
+                      <Text style={styles.undoRemovalText}>Undo</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+            </View>
+          </View>
+          
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={[styles.button, styles.cancelButton]}
+              onPress={onCancel}
+              disabled={loading}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.button, styles.createButton, loading && styles.buttonDisabled]}
+              onPress={handleSubmit}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="white" size="small" />
+              ) : (
+                <Text style={styles.createButtonText}>{isEditMode ? 'Update' : 'Post'}</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </ScrollView>
+      
+      {/* Delete Confirmation Modal */}
+      {isEditMode && (
+        <Modal
+          visible={showDeleteDialog}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowDeleteDialog(false)}
+        >
+          <View style={styles.deleteModalOverlay}>
+            <View style={styles.deleteModalContent}>
+              <Text style={styles.deleteModalTitle}>Delete Comment?</Text>
+              <Text style={styles.deleteModalText}>
+                This action cannot be undone. This will permanently delete this comment.
+              </Text>
+              <View style={styles.deleteModalActions}>
+                <TouchableOpacity
+                  style={styles.deleteModalCancel}
+                  onPress={() => setShowDeleteDialog(false)}
+                >
+                  <Text style={styles.deleteModalCancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.deleteModalConfirm}
+                  onPress={handleDeleteComment}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="white" size="small" />
+                  ) : (
+                    <Text style={styles.deleteModalConfirmText}>Delete</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
+    </KeyboardAvoidingView>
+  )
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  scrollContainer: {
+    flex: 1,
+  },
+  content: {
+    padding: 20,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  form: {
+    marginBottom: 30,
+  },
+  input: {
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    marginBottom: 15,
+    fontSize: 16,
+    color: '#333',
+  },
+  textArea: {
+    height: 120,
+    paddingTop: 12,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 15,
+  },
+  button: {
+    flex: 1,
+    paddingVertical: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 50,
+  },
+  cancelButton: {
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  cancelButtonText: {
+    color: '#666',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  createButton: {
+    backgroundColor: '#007AFF',
+  },
+  createButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  fileSection: {
+    marginBottom: 15,
+  },
+  uploadButton: {
+    backgroundColor: '#f8f9fa',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 15,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  uploadButtonText: {
+    color: '#007AFF',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  filePreview: {
+    backgroundColor: '#f8f9fa',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 10,
+    alignItems: 'center',
+  },
+  previewImage: {
+    width: '100%',
+    height: 150,
+    borderRadius: 6,
+    marginBottom: 10,
+  },
+  removeFileButton: {
+    backgroundColor: '#ff4757',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+  },
+  removeFileText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  // Header styles
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  cancelHeaderButton: {
+    padding: 8,
+    borderRadius: 6,
+    backgroundColor: '#f8f9fa',
+  },
+  placeholder: {
+    width: 40, // Same width as cancel button to center title
+  },
+  // Current file preview styles
+  currentFilePreview: {
+    backgroundColor: '#f8f9fa',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 10,
+    marginTop: 10,
+  },
+  currentFileText: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 8,
+  },
+  currentFileImage: {
+    borderRadius: 6,
+    minHeight: 150,
+    maxHeight: 300,
+  },
+  // Delete button styles
+  deleteHeaderButton: {
+    padding: 8,
+    borderRadius: 6,
+    backgroundColor: '#f8f9fa',
+  },
+  // Delete modal styles
+  deleteModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteModalContent: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 20,
+    marginHorizontal: 20,
+    minWidth: 300,
+  },
+  deleteModalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  deleteModalText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  deleteModalActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  deleteModalCancel: {
+    backgroundColor: '#f8f9fa',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    flex: 1,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  deleteModalCancelText: {
+    color: '#666',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  deleteModalConfirm: {
+    backgroundColor: '#ff4757',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    flex: 1,
+    alignItems: 'center',
+  },
+  deleteModalConfirmText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  // Current file styles
+  currentFileHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  removeCurrentFileButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ff4757',
+    padding: 8,
+    borderRadius: 6,
+  },
+  removeCurrentFileText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '500',
+    marginLeft: 5,
+  },
+  // Removal notice styles
+  removalNotice: {
+    backgroundColor: '#fff5f5',
+    borderWidth: 1,
+    borderColor: '#ff4757',
+    borderRadius: 8,
+    padding: 15,
+    marginTop: 10,
+  },
+  removalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  removalText: {
+    color: '#ff4757',
+    fontSize: 14,
+    fontWeight: '500',
+    flex: 1,
+    marginLeft: 8,
+  },
+  undoRemovalButton: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+  },
+  undoRemovalText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+})
