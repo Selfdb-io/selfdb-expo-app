@@ -48,6 +48,7 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
   const [selectedFile, setSelectedFile] = useState<string | null>(null)
   const [uploadedFileId, setUploadedFileId] = useState<string | null>(null)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [removeCurrentFile, setRemoveCurrentFile] = useState(false)
   const isEditMode = !!initialTopic
 
   useEffect(() => {
@@ -80,16 +81,7 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
     try {
       let fileId = uploadedFileId
 
-      // Handle file replacement in edit mode
-      if (selectedFile && isEditMode && initialTopic?.file_id) {
-        try {
-          await storage.files.deleteFile('discussion', initialTopic.file_id)
-        } catch (deleteError) {
-          console.warn('Could not delete old file:', deleteError)
-        }
-      }
-
-      // Upload file if one is selected but not yet uploaded
+      // Upload new file if one is selected but not yet uploaded
       if (selectedFile && !uploadedFileId) {
         try {
           // Create a File object from the URI
@@ -113,10 +105,17 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
 
       if (isEditMode && initialTopic) {
         // Update topic
+        let finalFileId = fileId
+
+        // Handle file removal if user marked current file for removal
+        if (removeCurrentFile && !selectedFile) {
+          finalFileId = null
+        }
+
         const updatedTopicData = {
           title: title.trim(),
           content: content.trim(),
-          file_id: fileId || null
+          file_id: finalFileId
         }
 
         try {
@@ -124,6 +123,19 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
             .from('topics')
             .where('id', initialTopic.id)
             .update(updatedTopicData)
+
+          // Delete old file only after successful update and if we're replacing with a new file OR removing it
+          if (initialTopic.file_id && (
+            (selectedFile && fileId !== initialTopic.file_id) || // Replacing with new file
+            (removeCurrentFile && !selectedFile) // Removing current file
+          )) {
+            try {
+              await storage.files.deleteFile('discussion', initialTopic.file_id)
+            } catch (deleteError) {
+              console.warn('Could not delete old file:', deleteError)
+              // Continue even if old file deletion fails
+            }
+          }
 
           const updatedTopic: Topic = {
             ...initialTopic,
@@ -173,6 +185,7 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
       setAuthorName('')
       setSelectedFile(null)
       setUploadedFileId(null)
+      setRemoveCurrentFile(false)
       onCancel()
     } catch (error) {
       console.error(`Failed to ${isEditMode ? 'update' : 'create'} topic:`, error)
@@ -248,66 +261,9 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
     setUploadedFileId(null)
   }
 
-  const handleRemoveCurrentFile = async () => {
-    if (!initialTopic?.file_id) return
-
-    Alert.alert(
-      'Remove Attachment',
-      'Are you sure you want to remove the current attachment?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setLoading(true)
-              
-              // Delete file from storage
-                // Delete attached file if it exists
-              if (initialTopic.file_id) {
-                try {
-                  await storage.files.deleteFile('discussion', initialTopic.file_id)
-                } catch (deleteError) {
-                  console.warn('Could not delete topic file:', deleteError)
-                  // Continue with topic deletion even if file deletion fails
-                }
-              }
-
-              // Update topic in database to remove file_id
-              await db
-                .from('topics')
-                .where('id', initialTopic.id)
-                .update({ file_id: null })
-
-              // Update local state
-              const updatedTopic: Topic = {
-                ...initialTopic,
-                file_id: undefined
-              }
-              
-              onTopicCreated(updatedTopic)
-              setUploadedFileId(null)
-              
-              // Call onTopicUpdated to trigger refetch in parent component
-              if (onTopicUpdated) {
-                onTopicUpdated()
-              }
-              
-              Alert.alert('Success', 'Attachment removed successfully')
-            } catch (error) {
-              console.error('Failed to remove file:', error)
-              Alert.alert('Error', 'Failed to remove attachment. Please try again.')
-            } finally {
-              setLoading(false)
-            }
-          },
-        },
-      ]
-    )
+  const handleRemoveCurrentFile = () => {
+    setRemoveCurrentFile(true)
+    setUploadedFileId(null)
   }
 
   const handleDeleteTopic = async () => {
@@ -457,7 +413,7 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
               )}
               
               {/* Show current file if editing and no new file selected */}
-              {isEditMode && initialTopic?.file_id && !selectedFile && (
+              {isEditMode && initialTopic?.file_id && !selectedFile && !removeCurrentFile && (
                 <View style={styles.currentFilePreview}>
                   <View style={styles.currentFileHeader}>
                     <Text style={styles.currentFileText}>Current attachment:</Text>
@@ -471,6 +427,23 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
                     </TouchableOpacity>
                   </View>
                   <FilePreview fileId={initialTopic.file_id} style={styles.currentFileImage} />
+                </View>
+              )}
+
+              {/* Show removal notice if file is marked for removal */}
+              {isEditMode && initialTopic?.file_id && !selectedFile && removeCurrentFile && (
+                <View style={styles.removalNotice}>
+                  <View style={styles.removalHeader}>
+                    <Ionicons name="warning" size={20} color="#ff4757" />
+                    <Text style={styles.removalText}>Attachment will be removed when you update</Text>
+                    <TouchableOpacity
+                      style={styles.undoRemovalButton}
+                      onPress={() => setRemoveCurrentFile(false)}
+                      disabled={loading}
+                    >
+                      <Text style={styles.undoRemovalText}>Undo</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               )}
             </View>
@@ -772,5 +745,37 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     marginLeft: 5,
+  },
+  // Removal notice styles
+  removalNotice: {
+    backgroundColor: '#fff5f5',
+    borderWidth: 1,
+    borderColor: '#ff4757',
+    borderRadius: 8,
+    padding: 15,
+    marginTop: 10,
+  },
+  removalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  removalText: {
+    color: '#ff4757',
+    fontSize: 14,
+    fontWeight: '500',
+    flex: 1,
+    marginLeft: 8,
+  },
+  undoRemovalButton: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+  },
+  undoRemovalText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '500',
   },
 })
