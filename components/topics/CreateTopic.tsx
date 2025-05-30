@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   View,
   Text,
@@ -10,22 +10,31 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Modal,
 } from 'react-native'
 import { Image } from 'expo-image'
-import * as ImagePicker from 'expo-image-picker'
 import { useAuth } from '@/contexts/AuthContext'
 import { db, storage } from '@/services/selfdb'
 import { Topic } from '@/types'
 import { showMediaPickerOptions, safeLaunchCamera, safeLaunchImageLibrary } from '@/lib/deviceUtils'
+import { FilePreview } from '@/components/FilePreview'
+import { Ionicons } from '@expo/vector-icons'
+import { router } from 'expo-router'
 
 interface CreateTopicProps {
   onTopicCreated: (topic: Topic) => void
   onCancel: () => void
+  initialTopic?: Topic
+  onEditComplete?: () => void
+  onBack?: () => void
 }
 
 export const CreateTopic: React.FC<CreateTopicProps> = ({ 
   onTopicCreated, 
-  onCancel 
+  onCancel,
+  initialTopic,
+  onEditComplete,
+  onBack
 }) => {
   const { user, isAuthenticated } = useAuth()
   const [title, setTitle] = useState('')
@@ -34,6 +43,17 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
   const [loading, setLoading] = useState(false)
   const [selectedFile, setSelectedFile] = useState<string | null>(null)
   const [uploadedFileId, setUploadedFileId] = useState<string | null>(null)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const isEditMode = !!initialTopic
+
+  useEffect(() => {
+    if (initialTopic) {
+      setTitle(initialTopic.title)
+      setContent(initialTopic.content)
+      setAuthorName(initialTopic.author_name)
+      setUploadedFileId(initialTopic.file_id || null)
+    }
+  }, [initialTopic])
 
   const handleSubmit = async () => {
     if (!title.trim()) {
@@ -56,34 +76,91 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
     try {
       let fileId = uploadedFileId
 
+      // Handle file replacement in edit mode
+      if (selectedFile && isEditMode && initialTopic?.file_id) {
+        try {
+          const buckets = await storage.buckets.listBuckets()
+          const discussionBucket = buckets.find(b => b.name === 'discussion')
+          if (discussionBucket) {
+            await storage.files.deleteFile(discussionBucket.id, initialTopic.file_id)
+          }
+        } catch (deleteError) {
+          console.warn('Could not delete old file:', deleteError)
+        }
+      }
+
       // Upload file if one is selected but not yet uploaded
       if (selectedFile && !uploadedFileId) {
-        // Create a File object from the URI
-        const fileInfo = await fetch(selectedFile)
-        const blob = await fileInfo.blob()
-        const fileName = selectedFile.split('/').pop() || 'file'
-        
-        const file = new File([blob], fileName, {
-          type: blob.type || 'application/octet-stream'
-        })
-        
-        const uploadResult = await storage.upload('discussion', file)
-        fileId = uploadResult.file.id.toString()
+        try {
+          // Create a File object from the URI
+          const fileInfo = await fetch(selectedFile)
+          const blob = await fileInfo.blob()
+          const fileName = selectedFile.split('/').pop() || 'file'
+          
+          const file = new File([blob], fileName, {
+            type: blob.type || 'application/octet-stream'
+          })
+          
+          const uploadResult = await storage.upload('discussion', file)
+          fileId = uploadResult.file.id.toString()
+        } catch (uploadError) {
+          console.error('Failed to upload file:', uploadError)
+          Alert.alert('Error', 'Failed to upload file. Please try again.')
+          setLoading(false)
+          return
+        }
       }
 
-      const topicData = {
-        title: title.trim(),
-        content: content.trim(),
-        author_name: isAuthenticated ? user!.email : authorName.trim(),
-        user_id: isAuthenticated ? user!.id : undefined,
-        file_id: fileId
-      }
+      if (isEditMode && initialTopic) {
+        // Update topic
+        const updatedTopicData = {
+          title: title.trim(),
+          content: content.trim(),
+          file_id: fileId || null
+        }
 
-      console.log('Creating topic with data:', topicData)
-      const newTopic = await db.from('topics').insert(topicData) as unknown as Topic
-      console.log('Topic created:', newTopic)
-      
-      onTopicCreated(newTopic)
+        try {
+          await db
+            .from('topics')
+            .where('id', initialTopic.id)
+            .update(updatedTopicData)
+
+          const updatedTopic: Topic = {
+            ...initialTopic,
+            ...updatedTopicData,
+            file_id: updatedTopicData.file_id || undefined
+          }
+
+          onTopicCreated(updatedTopic)
+          
+          if (onEditComplete) {
+            onEditComplete()
+          }
+        } catch (updateError) {
+          console.error('Failed to update topic in database:', updateError)
+          throw new Error('Database update failed')
+        }
+      } else {
+        // Create new topic
+        const topicData = {
+          title: title.trim(),
+          content: content.trim(),
+          author_name: isAuthenticated ? user!.email : authorName.trim(),
+          user_id: isAuthenticated ? user!.id : undefined,
+          file_id: fileId || null
+        }
+
+        console.log('Creating topic with data:', topicData)
+        try {
+          const newTopic = await db.from('topics').insert(topicData) as unknown as Topic
+          console.log('Topic created:', newTopic)
+          
+          onTopicCreated(newTopic)
+        } catch (createError) {
+          console.error('Failed to create topic in database:', createError)
+          throw new Error('Failed to create topic')
+        }
+      }
       
       // Reset form
       setTitle('')
@@ -91,9 +168,10 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
       setAuthorName('')
       setSelectedFile(null)
       setUploadedFileId(null)
+      onCancel()
     } catch (error) {
-      console.error('Failed to create topic:', error)
-      Alert.alert('Error', 'Failed to create topic. Please try again.')
+      console.error(`Failed to ${isEditMode ? 'update' : 'create'} topic:`, error)
+      Alert.alert('Error', `Failed to ${isEditMode ? 'update' : 'create'} topic. Please try again.`)
     } finally {
       setLoading(false)
     }
@@ -165,6 +243,115 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
     setUploadedFileId(null)
   }
 
+  const handleRemoveCurrentFile = async () => {
+    if (!initialTopic?.file_id) return
+
+    Alert.alert(
+      'Remove Attachment',
+      'Are you sure you want to remove the current attachment?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setLoading(true)
+              
+              // Delete file from storage
+              const buckets = await storage.buckets.listBuckets()
+              const discussionBucket = buckets.find(b => b.name === 'discussion')
+              if (discussionBucket) {
+                await storage.files.deleteFile(discussionBucket.id, initialTopic.file_id!)
+              }
+
+              // Update topic in database to remove file_id
+              await db
+                .from('topics')
+                .where('id', initialTopic.id)
+                .update({ file_id: null })
+
+              // Update local state
+              const updatedTopic: Topic = {
+                ...initialTopic,
+                file_id: undefined
+              }
+              
+              onTopicCreated(updatedTopic)
+              setUploadedFileId(null)
+              
+              Alert.alert('Success', 'Attachment removed successfully')
+            } catch (error) {
+              console.error('Failed to remove file:', error)
+              Alert.alert('Error', 'Failed to remove attachment. Please try again.')
+            } finally {
+              setLoading(false)
+            }
+          },
+        },
+      ]
+    )
+  }
+
+  const handleDeleteTopic = async () => {
+    if (!initialTopic) return
+
+    try {
+      setLoading(true)
+
+      // Delete attached file if it exists
+      if (initialTopic.file_id) {
+        try {
+          const buckets = await storage.buckets.listBuckets()
+          const discussionBucket = buckets.find(b => b.name === 'discussion')
+          if (discussionBucket) {
+            await storage.files.deleteFile(discussionBucket.id, initialTopic.file_id)
+          }
+        } catch (deleteError) {
+          console.warn('Could not delete topic file:', deleteError)
+          // Continue with topic deletion even if file deletion fails
+        }
+      }
+
+      // Delete all comments associated with this topic first
+      try {
+        await db
+          .from('comments')
+          .where('topic_id', initialTopic.id)
+          .delete()
+      } catch (commentsDeleteError) {
+        console.warn('Could not delete topic comments:', commentsDeleteError)
+        // Continue with topic deletion
+      }
+
+      // Delete topic using query builder API
+      await db
+        .from('topics')
+        .where('id', initialTopic.id)
+        .delete()
+
+      Alert.alert('Success', 'Topic deleted successfully')
+
+      // Navigate back
+      if (onBack) {
+        onBack()
+      } else if (onCancel) {
+        onCancel()
+      } else {
+        router.back()
+      }
+    } catch (error) {
+      console.error('Failed to delete topic:', error)
+      Alert.alert('Error', 'Failed to delete topic. Please try again.')
+    } finally {
+      setLoading(false)
+      setShowDeleteDialog(false)
+    }
+  }
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -172,7 +359,28 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
     >
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
-          <Text style={styles.title}>Create New Topic</Text>
+          {/* Header with cancel button */}
+          <View style={styles.header}>
+            <TouchableOpacity
+              style={styles.cancelHeaderButton}
+              onPress={onCancel}
+              disabled={loading}
+            >
+              <Ionicons name="close" size={24} color="#007AFF" />
+            </TouchableOpacity>
+            <Text style={styles.title}>{isEditMode ? 'Edit Topic' : 'Create New Topic'}</Text>
+            {isEditMode ? (
+              <TouchableOpacity
+                style={styles.deleteHeaderButton}
+                onPress={() => setShowDeleteDialog(true)}
+                disabled={loading}
+              >
+                <Ionicons name="trash" size={24} color="#ff4757" />
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.placeholder} />
+            )}
+          </View>
           
           <View style={styles.form}>
             <TextInput
@@ -195,7 +403,7 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
               textAlignVertical="top"
             />
             
-            {!isAuthenticated && (
+            {!isAuthenticated && !isEditMode && (
               <TextInput
                 style={styles.input}
                 placeholder="Your name"
@@ -213,7 +421,7 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
               disabled={loading}
             >
               <Text style={styles.uploadButtonText}>
-                📷 Add Photo or Video
+                📷 {isEditMode && initialTopic?.file_id ? 'Replace Photo or Video' : 'Add Photo or Video'}
               </Text>
             </TouchableOpacity>
 
@@ -230,6 +438,24 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
                   >
                     <Text style={styles.removeFileText}>✕ Remove</Text>
                   </TouchableOpacity>
+                </View>
+              )}
+              
+              {/* Show current file if editing and no new file selected */}
+              {isEditMode && initialTopic?.file_id && !selectedFile && (
+                <View style={styles.currentFilePreview}>
+                  <View style={styles.currentFileHeader}>
+                    <Text style={styles.currentFileText}>Current attachment:</Text>
+                    <TouchableOpacity
+                      style={styles.removeCurrentFileButton}
+                      onPress={handleRemoveCurrentFile}
+                      disabled={loading}
+                    >
+                      <Ionicons name="close-circle" size={20} color="#ff4757" />
+                      <Text style={styles.removeCurrentFileText}>Remove</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <FilePreview fileId={initialTopic.file_id} style={styles.currentFileImage} />
                 </View>
               )}
             </View>
@@ -252,12 +478,50 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
               {loading ? (
                 <ActivityIndicator color="white" size="small" />
               ) : (
-                <Text style={styles.createButtonText}>Create Topic</Text>
+                <Text style={styles.createButtonText}>{isEditMode ? 'Update Topic' : 'Create Topic'}</Text>
               )}
             </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
+      
+      {/* Delete Confirmation Modal */}
+      {isEditMode && (
+        <Modal
+          visible={showDeleteDialog}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowDeleteDialog(false)}
+        >
+          <View style={styles.deleteModalOverlay}>
+            <View style={styles.deleteModalContent}>
+              <Text style={styles.deleteModalTitle}>Delete Topic?</Text>
+              <Text style={styles.deleteModalText}>
+                This action cannot be undone. This will permanently delete the topic and all its comments.
+              </Text>
+              <View style={styles.deleteModalActions}>
+                <TouchableOpacity
+                  style={styles.deleteModalCancel}
+                  onPress={() => setShowDeleteDialog(false)}
+                >
+                  <Text style={styles.deleteModalCancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.deleteModalConfirm}
+                  onPress={handleDeleteTopic}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="white" size="small" />
+                  ) : (
+                    <Text style={styles.deleteModalConfirmText}>Delete</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
     </KeyboardAvoidingView>
   )
 }
@@ -374,5 +638,124 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 14,
     fontWeight: '500',
+  },
+  // Header styles
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  cancelHeaderButton: {
+    padding: 8,
+    borderRadius: 6,
+    backgroundColor: '#f8f9fa',
+  },
+  placeholder: {
+    width: 40, // Same width as cancel button to center title
+  },
+  // Current file preview styles
+  currentFilePreview: {
+    backgroundColor: '#f8f9fa',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 10,
+    marginTop: 10,
+  },
+  currentFileText: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 8,
+  },
+  currentFileImage: {
+    borderRadius: 6,
+    minHeight: 150,
+    maxHeight: 300,
+  },
+  // Delete button styles
+  deleteHeaderButton: {
+    padding: 8,
+    borderRadius: 6,
+    backgroundColor: '#f8f9fa',
+  },
+  // Delete modal styles
+  deleteModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteModalContent: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 20,
+    marginHorizontal: 20,
+    minWidth: 300,
+  },
+  deleteModalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  deleteModalText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  deleteModalActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  deleteModalCancel: {
+    backgroundColor: '#f8f9fa',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    flex: 1,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  deleteModalCancelText: {
+    color: '#666',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  deleteModalConfirm: {
+    backgroundColor: '#ff4757',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    flex: 1,
+    alignItems: 'center',
+  },
+  deleteModalConfirmText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  // Current file styles
+  currentFileHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  removeCurrentFileButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ff4757',
+    padding: 8,
+    borderRadius: 6,
+  },
+  removeCurrentFileText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '500',
+    marginLeft: 5,
   },
 })

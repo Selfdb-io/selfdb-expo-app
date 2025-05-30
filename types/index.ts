@@ -21,7 +21,7 @@ export interface Topic {
 
 export interface Comment {
   id: string
-  topic_id: number
+  topic_id: string
   content: string
   author_name: string // For anonymous users
   user_id?: string // For authenticated users (matches SDK User.id type)
