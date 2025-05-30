@@ -77,16 +77,7 @@ export default function HomeScreen() {
       </ThemedView>
 
       <View style={styles.content}>
-        <View style={styles.actionBar}>
-          <TouchableOpacity
-            style={styles.createButton}
-            onPress={() => setShowCreateTopic(true)}
-          >
-            <Text style={styles.createButtonText}>+ Create Topic</Text>
-          </TouchableOpacity>
-        </View>
-
-        <TopicsList />
+        <TopicsList onCreateTopic={() => setShowCreateTopic(true)} />
       </View>
 
       <AuthModal
@@ -154,22 +145,5 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-  },
-  actionBar: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-  },
-  createButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  createButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
   },
 });

@@ -7,7 +7,7 @@ export type { FileMetadata }
 export type MediaType = 'image' | 'video' | 'audio' | 'pdf' | 'other'
 
 export interface Topic {
-  id: number
+  id: string
   title: string
   content: string
   author_name: string // For anonymous users
@@ -20,7 +20,7 @@ export interface Topic {
 }
 
 export interface Comment {
-  id: number
+  id: string
   topic_id: number
   content: string
   author_name: string // For anonymous users

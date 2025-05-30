@@ -9,17 +9,23 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import { db } from '@/services/selfdb'
 import { Topic } from '@/types'
 import { formatDate } from '@/lib/utils'
 import { FilePreview } from '../FilePreview'
 import { TopicDetail } from './TopicDetail'
 
-export const TopicsList: React.FC = () => {
+interface TopicsListProps {
+  onCreateTopic?: () => void
+}
+
+export const TopicsList: React.FC<TopicsListProps> = ({ onCreateTopic }) => {
   const [topics, setTopics] = useState<Topic[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null)
+  const [visibleTopics, setVisibleTopics] = useState<Set<string>>(new Set())
 
   const loadTopics = async () => {
     try {
@@ -32,6 +38,15 @@ export const TopicsList: React.FC = () => {
         .execute()
       console.log('Topics loaded:', topicsData.length)
       setTopics(topicsData as unknown as Topic[])
+      
+      // Clear visible topics and gradually show them with 100ms delay
+      setVisibleTopics(new Set())
+      
+      // Add 100ms delay to ensure media loads with text content
+      setTimeout(() => {
+        const topicIds = new Set(topicsData.map((topic: any) => topic.id.toString()))
+        setVisibleTopics(topicIds)
+      }, 100)
     } catch (error) {
       console.error('Failed to load topics:', error)
     } finally {
@@ -53,31 +68,51 @@ export const TopicsList: React.FC = () => {
     setSelectedTopicId(topic.id.toString())
   }
 
-  const renderTopic = ({ item }: { item: Topic }) => (
-    <TouchableOpacity
-      style={styles.topicCard}
-      onPress={() => handleTopicPress(item)}
-    >
-      <Text style={styles.topicTitle}>{item.title}</Text>
-      <Text style={styles.topicContent} numberOfLines={2}>
-        {item.content}
-      </Text>
-      {item.file_id && (
-        <View style={styles.imageContainer}>
-          <FilePreview fileId={item.file_id} style={styles.topicImage} />
+  const renderTopic = ({ item }: { item: Topic }) => {
+    const isVisible = visibleTopics.has(item.id.toString())
+    
+    if (!isVisible) {
+      // Show loading skeleton while waiting for content to be synchronized
+      return (
+        <View style={[styles.topicCard, styles.loadingSkeleton]}>
+          <View style={styles.skeletonTitle} />
+          <View style={styles.skeletonContent} />
+          <View style={styles.skeletonContent} />
+          {item.file_id && <View style={styles.skeletonImage} />}
+          <View style={styles.skeletonMeta}>
+            <View style={styles.skeletonAuthor} />
+            <View style={styles.skeletonDate} />
+          </View>
         </View>
-      )}
-      <View style={styles.topicMeta}>
-        <Text style={styles.author}>By {item.author_name}</Text>
-        <Text style={styles.date}>{formatDate(item.created_at)}</Text>
-      </View>
-      {item.comment_count !== undefined && (
-        <Text style={styles.commentCount}>
-          {item.comment_count} comment{item.comment_count !== 1 ? 's' : ''}
+      )
+    }
+    
+    return (
+      <TouchableOpacity
+        style={styles.topicCard}
+        onPress={() => handleTopicPress(item)}
+      >
+        <Text style={styles.topicTitle}>{item.title}</Text>
+        <Text style={styles.topicContent} numberOfLines={2}>
+          {item.content}
         </Text>
-      )}
-    </TouchableOpacity>
-  )
+        {item.file_id && (
+          <View style={styles.imageContainer}>
+            <FilePreview fileId={item.file_id} style={styles.topicImage} />
+          </View>
+        )}
+        <View style={styles.topicMeta}>
+          <Text style={styles.author}>By {item.author_name}</Text>
+          <Text style={styles.date}>{formatDate(item.created_at)}</Text>
+        </View>
+        {item.comment_count !== undefined && (
+          <Text style={styles.commentCount}>
+            {item.comment_count} comment{item.comment_count !== 1 ? 's' : ''}
+          </Text>
+        )}
+      </TouchableOpacity>
+    )
+  }
 
   if (loading) {
     return (
@@ -110,6 +145,17 @@ export const TopicsList: React.FC = () => {
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
       />
+      
+      {/* Floating Action Button */}
+      {onCreateTopic && (
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={onCreateTopic}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="add" size={28} color="white" />
+        </TouchableOpacity>
+      )}
     </View>
   )
 }
@@ -184,5 +230,66 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     fontStyle: 'italic',
+  },
+  loadingSkeleton: {
+    backgroundColor: '#f9f9f9',
+  },
+  skeletonTitle: {
+    height: 20,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 4,
+    marginBottom: 8,
+    width: '70%',
+  },
+  skeletonContent: {
+    height: 16,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 4,
+    marginBottom: 6,
+    width: '100%',
+  },
+  skeletonImage: {
+    height: 150,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 6,
+    marginBottom: 10,
+  },
+  skeletonMeta: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  skeletonAuthor: {
+    height: 12,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 4,
+    width: 60,
+  },
+  skeletonDate: {
+    height: 12,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 4,
+    width: 80,
+  },
+  fab: {
+    position: 'absolute',
+    width: 56,
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    right: 20,
+    bottom: 20,
+    backgroundColor: '#007AFF',
+    borderRadius: 28,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4.65,
+    zIndex: 1000,
   },
 })
