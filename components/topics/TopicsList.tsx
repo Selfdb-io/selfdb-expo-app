@@ -11,7 +11,7 @@ import {
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { db } from '@/services/selfdb'
+import { db, realtime } from '@/services/selfdb'
 import { Topic } from '@/types'
 import { formatDate } from '@/lib/utils'
 import { FilePreview } from '../FilePreview'
@@ -73,6 +73,86 @@ export const TopicsList: React.FC<TopicsListProps> = ({
 
   useEffect(() => {
     loadTopics()
+
+    // Store subscription references
+    let topicsSubscription: any = null
+
+    // Set up realtime subscription for topics
+    const setupRealtime = async () => {
+      try {
+        await realtime.connect()
+        
+        // Subscribe to topics changes
+        topicsSubscription = realtime.subscribe('topics', (payload: any) => {
+          console.log('Topics realtime update:', payload)
+          
+          // Handle different types of realtime events
+          if (payload.eventType === 'DELETE') {
+            // Remove deleted topic from the list
+            const deletedTopicId = payload.old?.id?.toString()
+            console.log('Removing deleted topic:', deletedTopicId)
+            
+            setTopics(currentTopics => 
+              currentTopics.filter(topic => topic.id.toString() !== deletedTopicId)
+            )
+            setVisibleTopics(currentVisible => {
+              const newVisible = new Set(currentVisible)
+              newVisible.delete(deletedTopicId)
+              return newVisible
+            })
+            
+            // If the deleted topic is currently selected, go back to list
+            if (selectedTopicId === deletedTopicId) {
+              setSelectedTopicId(null)
+            }
+          } else if (payload.eventType === 'INSERT') {
+            // Add new topic to the beginning of the list
+            const newTopic = payload.new as Topic
+            console.log('Adding new topic:', newTopic.id)
+            
+            setTopics(currentTopics => [newTopic, ...currentTopics])
+            setVisibleTopics(currentVisible => {
+              const newVisible = new Set(currentVisible)
+              newVisible.add(newTopic.id.toString())
+              return newVisible
+            })
+          } else if (payload.eventType === 'UPDATE') {
+            // Update existing topic
+            const updatedTopic = payload.new as Topic
+            console.log('Updating topic:', updatedTopic.id)
+            
+            setTopics(currentTopics => 
+              currentTopics.map(topic => 
+                topic.id.toString() === updatedTopic.id.toString() ? updatedTopic : topic
+              )
+            )
+          } else {
+            // For any other changes, reload all topics
+            console.log('Unknown event type, reloading topics:', payload.eventType)
+            loadTopics()
+          }
+        })
+        
+        console.log('✅ Realtime subscription established for topics')
+      } catch (error) {
+        console.warn('Realtime features disabled for topics:', error)
+        // Realtime is optional, continue without it
+      }
+    }
+
+    setupRealtime()
+
+    return () => {
+      try {
+        // Unsubscribe from topics if subscription exists
+        if (topicsSubscription && typeof topicsSubscription.unsubscribe === 'function') {
+          topicsSubscription.unsubscribe()
+        }
+        // Note: We don't disconnect realtime here as TopicDetail might be using it
+      } catch (error) {
+        console.warn('Error cleaning up realtime subscriptions:', error)
+      }
+    }
   }, [])
 
   const handleRefresh = () => {

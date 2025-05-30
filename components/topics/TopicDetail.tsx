@@ -17,7 +17,7 @@ import * as ImagePicker from 'expo-image-picker'
 import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { useAuth } from '@/contexts/AuthContext'
-import { db, storage } from '@/services/selfdb'
+import { db, storage, realtime } from '@/services/selfdb'
 import { Topic, Comment } from '@/types'
 import { formatDate } from '@/lib/utils'
 import { FilePreview } from '@/components/FilePreview'
@@ -56,7 +56,119 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack }) => 
     if (topicId) {
       loadTopicAndComments()
     }
-  }, [topicId])
+
+    // Store subscription references
+    let topicsSubscription: any = null
+    let commentsSubscription: any = null
+
+    // Set up realtime subscriptions
+    const setupRealtime = async () => {
+      try {
+        await realtime.connect()
+        
+        // Subscribe to topics changes
+        topicsSubscription = realtime.subscribe('topics', (payload: any) => {
+          console.log('Topic realtime update:', payload)
+          
+          if (payload.eventType === 'DELETE' && payload.old?.id?.toString() === topicId) {
+            // Topic was deleted, navigate back
+            console.log('Topic deleted, navigating back')
+            Alert.alert(
+              'Topic Deleted',
+              'This topic has been deleted.',
+              [
+                {
+                  text: 'OK',
+                  onPress: () => {
+                    if (onBack) {
+                      onBack()
+                    } else {
+                      router.back()
+                    }
+                  }
+                }
+              ]
+            )
+          } else if (payload.eventType === 'UPDATE' && payload.new?.id?.toString() === topicId) {
+            // Topic was updated
+            const updatedTopic = payload.new as Topic
+            console.log('Topic updated:', updatedTopic.id)
+            setTopic(updatedTopic)
+          }
+        })
+        
+        // Subscribe to comments changes
+        commentsSubscription = realtime.subscribe('comments', (payload: any) => {
+          console.log('Comments realtime update:', payload)
+          
+          if (payload.eventType === 'DELETE') {
+            // Remove deleted comment from the list
+            const deletedCommentId = payload.old?.id?.toString()
+            console.log('Removing deleted comment:', deletedCommentId)
+            
+            setComments(currentComments => 
+              currentComments.filter(comment => comment.id.toString() !== deletedCommentId)
+            )
+            
+            // If we're editing this comment, stop editing
+            if (editingCommentId === deletedCommentId) {
+              setEditingCommentId(null)
+              setEditCommentContent('')
+              setEditCommentFile(null)
+              setEditCommentAuthorName('')
+            }
+            
+            // If this comment is in delete dialog, close it
+            if (commentToDelete?.id.toString() === deletedCommentId) {
+              setShowDeleteCommentDialog(false)
+              setCommentToDelete(null)
+            }
+          } else if (payload.eventType === 'INSERT') {
+            // Add new comment if it belongs to current topic
+            const newComment = payload.new as Comment
+            if (newComment.topic_id.toString() === topicId) {
+              console.log('Adding new comment:', newComment.id)
+              setComments(currentComments => [...currentComments, newComment])
+            }
+          } else if (payload.eventType === 'UPDATE') {
+            // Update existing comment if it belongs to current topic
+            const updatedComment = payload.new as Comment
+            if (updatedComment.topic_id.toString() === topicId) {
+              console.log('Updating comment:', updatedComment.id)
+              setComments(currentComments => 
+                currentComments.map(comment => 
+                  comment.id.toString() === updatedComment.id.toString() ? updatedComment : comment
+                )
+              )
+            }
+          }
+        })
+        
+        console.log('✅ Realtime subscriptions established for topic detail')
+      } catch (error) {
+        console.warn('Realtime features disabled for topic detail:', error)
+        // Realtime is optional, continue without it
+      }
+    }
+
+    setupRealtime()
+
+    return () => {
+      try {
+        // Unsubscribe from topics if subscription exists
+        if (topicsSubscription && typeof topicsSubscription.unsubscribe === 'function') {
+          topicsSubscription.unsubscribe()
+        }
+        // Unsubscribe from comments if subscription exists
+        if (commentsSubscription && typeof commentsSubscription.unsubscribe === 'function') {
+          commentsSubscription.unsubscribe()
+        }
+        // Note: We don't disconnect realtime here as other components might be using it
+      } catch (error) {
+        console.warn('Error cleaning up realtime subscriptions:', error)
+      }
+    }
+  }, [topicId, editingCommentId, commentToDelete])
 
   const loadTopicAndComments = async () => {
     try {
