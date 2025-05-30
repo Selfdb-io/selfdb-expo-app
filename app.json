@@ -17,7 +17,9 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [],
+      "package": "com.anonymous.selfdbexpo"
     },
     "web": {
       "bundler": "metro",
@@ -35,7 +37,13 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      "expo-video"
+      "expo-video",
+      [
+        "react-native-video",
+        {
+          "enableNotificationControls": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

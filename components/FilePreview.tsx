@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native'
 import { Image } from 'expo-image'
+import Video from 'react-native-video'
 import { storage } from '@/services/selfdb'
 import { FileMetadata, MediaType } from '@/types'
 
@@ -135,11 +136,14 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
       
       case 'video':
         return (
-          <View style={styles.mediaPlaceholder}>
-            <Text style={styles.mediaIcon}>🎬</Text>
-            <Text style={styles.mediaText}>Video</Text>
-            <Text style={styles.fileName}>{file.filename}</Text>
-          </View>
+          <Video
+            source={{ uri: publicUrl }}
+            style={styles.video}
+            controls={true}
+            resizeMode="contain"
+            paused={true}
+            poster={undefined}
+          />
         )
       
       case 'audio':
@@ -203,6 +207,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   image: {
+    width: '100%',
+    height: 180,
+    backgroundColor: '#f0f0f0',
+    maxWidth: '100%',
+  },
+  video: {
     width: '100%',
     height: 180,
     backgroundColor: '#f0f0f0',
