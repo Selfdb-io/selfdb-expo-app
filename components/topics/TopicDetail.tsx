@@ -24,6 +24,7 @@ import { FilePreview } from '@/components/FilePreview'
 import { showMediaPickerOptions, safeLaunchCamera, safeLaunchImageLibrary } from '@/lib/deviceUtils'
 import { canModifyContent } from '@/lib/permissions'
 import { CreateTopic } from '@/components/topics/CreateTopic'
+import { CommentActions } from '@/components/ui/CommentActions'
 
 interface TopicDetailProps {
   topicId: string
@@ -44,14 +45,6 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTop
   
   // Topic edit/delete state
   const [isEditingTopic, setIsEditingTopic] = useState(false)
-  
-  // Comment edit/delete state
-  const [editingCommentId, setEditingCommentId] = useState<string | null>(null)
-  const [editCommentContent, setEditCommentContent] = useState('')
-  const [editCommentFile, setEditCommentFile] = useState<string | null>(null)
-  const [editCommentAuthorName, setEditCommentAuthorName] = useState('')
-  const [showDeleteCommentDialog, setShowDeleteCommentDialog] = useState(false)
-  const [commentToDelete, setCommentToDelete] = useState<Comment | null>(null)
 
   useEffect(() => {
     if (topicId) {
@@ -115,18 +108,10 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTop
             )
             
             // If we're editing this comment, stop editing
-            if (editingCommentId === deletedCommentId) {
-              setEditingCommentId(null)
-              setEditCommentContent('')
-              setEditCommentFile(null)
-              setEditCommentAuthorName('')
-            }
+            // Note: This is now handled by the CommentActions component
             
             // If this comment is in delete dialog, close it
-            if (commentToDelete?.id.toString() === deletedCommentId) {
-              setShowDeleteCommentDialog(false)
-              setCommentToDelete(null)
-            }
+            // Note: This is now handled by the CommentActions component
           } else if (payload.eventType === 'INSERT') {
             // Add new comment if it belongs to current topic
             const newComment = payload.new as Comment
@@ -172,7 +157,7 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTop
         console.warn('Error cleaning up realtime subscriptions:', error)
       }
     }
-  }, [topicId, editingCommentId, commentToDelete])
+  }, [topicId])
 
   const loadTopicAndComments = async () => {
     try {
@@ -350,212 +335,19 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTop
     setSelectedFile(null)
   }
 
-
-  const handleStartEditComment = (comment: Comment) => {
-    setEditingCommentId(comment.id)
-    setEditCommentContent(comment.content)
-    setEditCommentAuthorName(comment.author_name)
-    setEditCommentFile(null)
-  }
-
-  const handleRemoveCommentFile = async () => {
-    if (!editingCommentId) return
-
-    const currentComment = comments.find(c => c.id === editingCommentId)
-    if (!currentComment?.file_id) return
-
-    Alert.alert(
-      'Remove Attachment',
-      'Are you sure you want to remove the current attachment?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setSubmitting(true)
-              
-              // Delete file from storage
-              await storage.files.deleteFile('discussion', currentComment.file_id!)
-
-              // Update comment in database to remove file_id
-              await db
-                .from('comments')
-                .where('id', editingCommentId)
-                .update({ file_id: null })
-
-              // Update local state
-              setComments(comments.map(comment => 
-                comment.id === editingCommentId 
-                  ? { ...comment, file_id: undefined } 
-                  : comment
-              ))
-              
-              Alert.alert('Success', 'Attachment removed successfully')
-            } catch (error) {
-              console.error('Failed to remove comment file:', error)
-              Alert.alert('Error', 'Failed to remove attachment. Please try again.')
-            } finally {
-              setSubmitting(false)
-            }
-          },
-        },
-      ]
-    )
-  }
-
-  const handleUpdateComment = async () => {
-    if (!editingCommentId || !editCommentContent.trim()) {
-      Alert.alert('Error', 'Please enter comment content')
-      return
-    }
-
-    if (!isAuthenticated && !editCommentAuthorName.trim()) {
-      Alert.alert('Error', 'Please enter your name')
-      return
-    }
-
-    try {
-      setSubmitting(true)
-
-      // Find the current comment to get its file_id
-      const currentComment = comments.find(c => c.id === editingCommentId)
-      let newFileId: string | undefined = currentComment?.file_id
-
-      // Handle file replacement
-      if (editCommentFile) {
-        // Delete old file if it exists
-        if (currentComment?.file_id) {
-          try {
-            await storage.files.deleteFile('discussion', currentComment.file_id)
-          } catch (deleteError) {
-            console.warn('Could not delete old comment file:', deleteError)
-          }
-        }
-
-        // Upload new file
-        try {
-          const fileInfo = await fetch(editCommentFile)
-          const blob = await fileInfo.blob()
-          const fileName = editCommentFile.split('/').pop() || 'file'
-          
-          const file = new File([blob], fileName, {
-            type: blob.type || 'application/octet-stream'
-          })
-          
-          const uploadResult = await storage.upload('discussion', file)
-          newFileId = uploadResult.file.id.toString()
-        } catch (uploadError) {
-          console.error('Failed to upload new comment file:', uploadError)
-          Alert.alert('Error', 'Failed to upload new file. Please try again.')
-          setSubmitting(false)
-          return
-        }
-      }
-
-      const updatedCommentData = {
-        content: editCommentContent.trim(),
-        file_id: newFileId || null
-      }
-
-      // Update comment using query builder API
-      await db
-        .from('comments')
-        .where('id', editingCommentId)
-        .update(updatedCommentData)
-
-      // Update the local state
-      setComments(comments.map(comment => 
-        comment.id === editingCommentId 
-          ? { ...comment, ...updatedCommentData, file_id: updatedCommentData.file_id || undefined } 
-          : comment
-      ))
-
-      // Reset edit state
-      setEditingCommentId(null)
-      setEditCommentContent('')
-      setEditCommentFile(null)
-      setEditCommentAuthorName('')
-    } catch (error) {
-      console.error('Failed to update comment:', error)
-      Alert.alert('Error', 'Failed to update comment. Please try again.')
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  const handleDeleteComment = async () => {
-    if (!commentToDelete) return
-
-    try {
-      setSubmitting(true)
-
-      // Delete attached file if it exists
-      if (commentToDelete.file_id) {
-        try {
-          await storage.files.deleteFile('discussion', commentToDelete.file_id)
-        } catch (deleteError) {
-          console.warn('Could not delete comment file:', deleteError)
-        }
-      }
-
-      // Delete comment using query builder API
-      await db
-        .from('comments')
-        .where('id', commentToDelete.id)
-        .delete()
-
-      // Refetch comments to ensure consistency
-      await loadComments()
-      
-      // Close the delete dialog
-      setShowDeleteCommentDialog(false)
-      setCommentToDelete(null)
-    } catch (error) {
-      console.error('Failed to delete comment:', error)
-      Alert.alert('Error', 'Failed to delete comment. Please try again.')
-    } finally {
-      setSubmitting(false)
-      setShowDeleteCommentDialog(false)
-      setCommentToDelete(null)
-    }
-  }
-
   const handleTopicEdited = (updatedTopic: Topic) => {
     setTopic(updatedTopic)
     setIsEditingTopic(false)
   }
 
-  const handleEditCommentFileChange = async () => {
-    try {
-      const options = await showMediaPickerOptions(
-        async () => {
-          const result = await safeLaunchCamera()
-          if (result && !result.canceled && result.assets[0]) {
-            setEditCommentFile(result.assets[0].uri)
-          }
-        },
-        async () => {
-          const result = await safeLaunchImageLibrary()
-          if (result && !result.canceled && result.assets[0]) {
-            setEditCommentFile(result.assets[0].uri)
-          }
-        }
-      )
-      
-      Alert.alert(
-        'Select Media',
-        'Choose how you want to add media',
-        options
-      )
-    } catch (error) {
-      console.error('Error showing media options:', error)
-      Alert.alert('Error', 'Failed to show media options.')
-    }
+  const handleCommentUpdated = (updatedComment: Comment) => {
+    setComments(comments.map(comment => 
+      comment.id === updatedComment.id ? updatedComment : comment
+    ))
+  }
+
+  const handleCommentDeleted = (commentId: string) => {
+    setComments(comments.filter(comment => comment.id.toString() !== commentId))
   }
 
   if (loading) {
@@ -627,125 +419,9 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTop
           
           {comments.map((comment) => (
             <View key={comment.id} style={styles.commentCard}>
-              {editingCommentId === comment.id ? (
-                <View style={styles.editCommentForm}>
-                  <TextInput
-                    style={[styles.input, styles.commentInput]}
-                    placeholder="Edit your comment..."
-                    placeholderTextColor="#666"
-                    value={editCommentContent}
-                    onChangeText={setEditCommentContent}
-                    multiline
-                    numberOfLines={4}
-                    textAlignVertical="top"
-                  />
-                  
-                  {!isAuthenticated && (
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Your name"
-                      placeholderTextColor="#666"
-                      value={editCommentAuthorName}
-                      onChangeText={setEditCommentAuthorName}
-                    />
-                  )}
-
-                  <TouchableOpacity
-                    style={styles.uploadButton}
-                    onPress={handleEditCommentFileChange}
-                    disabled={submitting}
-                  >
-                    <View style={styles.uploadButtonContent}>
-                      <Ionicons name="camera" size={20} color="#007AFF" style={styles.uploadIcon} />
-                      <Text style={styles.uploadButtonText}>
-                        {editCommentFile ? 'Replace Photo/Video' : (comment.file_id ? 'Replace Photo/Video' : 'Add Photo/Video')}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-
-                  {editCommentFile && (
-                    <View style={styles.filePreview}>
-                      {/* Use FilePreview component for better handling of videos and other media types */}
-                      <FilePreview 
-                        localUri={editCommentFile}
-                        style={styles.previewImage}
-                      />
-                      <TouchableOpacity
-                        style={styles.removeFileButton}
-                        onPress={() => setEditCommentFile(null)}
-                      >
-                        <Ionicons name="close-circle" size={20} color="white" />
-                        <Text style={styles.removeFileText}>Remove</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-
-                  {comment.file_id && !editCommentFile && (
-                    <View style={styles.currentFilePreview}>
-                      <View style={styles.currentFileHeader}>
-                        <Text style={styles.currentFileText}>Current attachment:</Text>
-                        <TouchableOpacity
-                          style={styles.removeCurrentFileButton}
-                          onPress={handleRemoveCommentFile}
-                          disabled={submitting}
-                        >
-                          <Ionicons name="close-circle" size={20} color="#ff4757" />
-                          <Text style={styles.removeCurrentFileText}>Remove</Text>
-                        </TouchableOpacity>
-                      </View>
-                      <FilePreview fileId={comment.file_id} style={styles.commentImage} />
-                    </View>
-                  )}
-
-                  <View style={styles.editActions}>
-                    <TouchableOpacity
-                      style={[styles.saveButton, submitting && styles.buttonDisabled]}
-                      onPress={handleUpdateComment}
-                      disabled={submitting}
-                    >
-                      {submitting ? (
-                        <ActivityIndicator color="white" size="small" />
-                      ) : (
-                        <Text style={styles.saveButtonText}>Save</Text>
-                      )}
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.cancelEditButton}
-                      onPress={() => {
-                        setEditingCommentId(null)
-                        setEditCommentContent('')
-                        setEditCommentFile(null)
-                        setEditCommentAuthorName('')
-                      }}
-                    >
-                      <Text style={styles.cancelEditButtonText}>Cancel</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ) : (
-                <>
-                  <View style={styles.commentHeader}>
-                    <Text style={styles.commentContent}>{comment.content}</Text>
-                    {canModifyContent(comment.user_id, user) && (
-                      <View style={styles.commentActions}>
-                        <TouchableOpacity
-                          style={styles.actionButton}
-                          onPress={() => handleStartEditComment(comment)}
-                        >
-                          <Ionicons name="pencil" size={16} color="#007AFF" />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={styles.actionButton}
-                          onPress={() => {
-                            setCommentToDelete(comment)
-                            setShowDeleteCommentDialog(true)
-                          }}
-                        >
-                          <Ionicons name="trash" size={16} color="#ff4757" />
-                        </TouchableOpacity>
-                      </View>
-                    )}
-                  </View>
+              <View style={styles.commentHeader}>
+                <View style={styles.commentContentContainer}>
+                  <Text style={styles.commentContent}>{comment.content}</Text>
                   {comment.file_id && (
                     <View style={styles.commentImageContainer}>
                       <FilePreview fileId={comment.file_id} style={styles.commentImage} />
@@ -757,8 +433,13 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTop
                       {formatDate(comment.created_at)}
                     </Text>
                   </View>
-                </>
-              )}
+                </View>
+                <CommentActions
+                  comment={comment}
+                  onCommentUpdated={handleCommentUpdated}
+                  onCommentDeleted={handleCommentDeleted}
+                />
+              </View>
             </View>
           ))}
         </View>
@@ -894,40 +575,6 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTop
         </View>
       </Modal>
 
-
-      {/* Delete Comment Confirmation */}
-      <Modal
-        visible={showDeleteCommentDialog}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowDeleteCommentDialog(false)}
-      >
-        <View style={styles.deleteModalOverlay}>
-          <View style={styles.deleteModalContent}>
-            <Text style={styles.deleteModalTitle}>Delete Comment?</Text>
-            <Text style={styles.deleteModalText}>
-              This action cannot be undone. This will permanently delete this comment.
-            </Text>
-            <View style={styles.deleteModalActions}>
-              <TouchableOpacity
-                style={styles.deleteModalCancel}
-                onPress={() => {
-                  setShowDeleteCommentDialog(false)
-                  setCommentToDelete(null)
-                }}
-              >
-                <Text style={styles.deleteModalCancelText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.deleteModalConfirm}
-                onPress={handleDeleteComment}
-              >
-                <Text style={styles.deleteModalConfirmText}>Delete</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
 
     </>
   )
@@ -1222,147 +869,18 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: '#f8f9fa',
   },
-  // Comment actions styles
   commentHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 10,
-  },
-  commentActions: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  // Edit comment styles
-  editCommentForm: {
     gap: 10,
   },
-  editActions: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  saveButton: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderRadius: 6,
+  commentContentContainer: {
     flex: 1,
-    alignItems: 'center',
-  },
-  saveButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  cancelEditButton: {
-    backgroundColor: '#f8f9fa',
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderRadius: 6,
-    flex: 1,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  cancelEditButtonText: {
-    color: '#666',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  currentFilePreview: {
-    backgroundColor: '#f8f9fa',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 6,
-    padding: 10,
-  },
-  currentFileText: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 8,
-  },
-  currentFileHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  removeCurrentFileButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ff4757',
-    padding: 8,
-    borderRadius: 6,
-  },
-  removeCurrentFileText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: '500',
-    marginLeft: 5,
   },
   // Edit topic modal styles
   editTopicModal: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-  },
-  // Delete modal styles
-  deleteModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  deleteModalContent: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 20,
-    marginHorizontal: 20,
-    minWidth: 300,
-  },
-  deleteModalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  deleteModalText: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 20,
-    lineHeight: 20,
-  },
-  deleteModalActions: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  deleteModalCancel: {
-    backgroundColor: '#f8f9fa',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    flex: 1,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  deleteModalCancelText: {
-    color: '#666',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  deleteModalConfirm: {
-    backgroundColor: '#ff4757',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    flex: 1,
-    alignItems: 'center',
-  },
-  deleteModalConfirmText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
   },
 })
