@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, TouchableOpacity, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -53,16 +54,20 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <ThemedView style={styles.header}>
-        <ThemedText type="title">SelfDB Forum</ThemedText>
+        <ThemedText type="subtitle">Open Disscussion Board</ThemedText>
         <View style={styles.headerActions}>
           {isAuthenticated ? (
             <View style={styles.userSection}>
-              <ThemedText style={styles.userEmail}>{user?.email}</ThemedText>
+              <View style={styles.userAvatar}>
+                <Text style={styles.userAvatarText}>
+                  {user?.email?.charAt(0).toUpperCase()}
+                </Text>
+              </View>
               <TouchableOpacity
                 style={styles.logoutButton}
                 onPress={handleLogout}
               >
-                <Text style={styles.logoutButtonText}>Logout</Text>
+                <Ionicons name="log-out" size={20} color="white" />
               </TouchableOpacity>
             </View>
           ) : (
@@ -70,7 +75,7 @@ export default function HomeScreen() {
               style={styles.loginButton}
               onPress={() => setShowAuthModal(true)}
             >
-              <Text style={styles.loginButtonText}>Login</Text>
+              <Ionicons name="person-circle" size={24} color="white" />
             </TouchableOpacity>
           )}
         </View>
@@ -117,15 +122,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
   },
+  userAvatar: {
+    backgroundColor: '#007AFF',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  userAvatarText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
   userEmail: {
     fontSize: 14,
     color: '#666',
   },
   logoutButton: {
     backgroundColor: '#ff4757',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
+    padding: 8,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 40,
+    height: 40,
   },
   logoutButtonText: {
     color: 'white',
@@ -134,14 +155,12 @@ const styles = StyleSheet.create({
   },
   loginButton: {
     backgroundColor: '#007AFF',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 6,
-  },
-  loginButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '600',
+    padding: 8,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 40,
+    height: 40,
   },
   content: {
     flex: 1,
