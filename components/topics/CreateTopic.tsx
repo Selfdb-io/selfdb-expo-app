@@ -398,10 +398,10 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
 
               {selectedFile && (
                 <View style={styles.filePreview}>
-                  <Image 
-                    source={{ uri: selectedFile }} 
+                  {/* Use FilePreview component for better handling of videos and other media types */}
+                  <FilePreview 
+                    localUri={selectedFile}
                     style={styles.previewImage}
-                    contentFit="cover"
                   />
                   <TouchableOpacity
                     style={styles.removeFileButton}

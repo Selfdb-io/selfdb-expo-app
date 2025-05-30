@@ -1,10 +1,34 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native'
 import { Image } from 'expo-image'
 import Video from 'react-native-video' // Your current video player
 import { Ionicons } from '@expo/vector-icons'
 import { storage } from '@/services/selfdb'
 import { FileMetadata, MediaType } from '@/types'
+
+/**
+ * FilePreview Component
+ * 
+ * Displays media files (images, videos, audio, PDFs, etc.) with support for both:
+ * - Remote files stored in SelfDB (using fileId)
+ * - Local files from device camera/photo library (using localUri)
+ * 
+ * For videos, it provides:
+ * - Play/pause controls with custom overlay
+ * - Proper handling of both local and remote video sources
+ * - Enhanced error handling and logging for debugging
+ * 
+ * Usage Examples:
+ * 
+ * // Remote file from SelfDB
+ * <FilePreview fileId="123" style={styles.preview} />
+ * 
+ * // Local file from camera/photo library
+ * <FilePreview localUri="file:///path/to/video.mp4" style={styles.preview} />
+ * 
+ * // With onPress handler
+ * <FilePreview fileId="123" onPress={() => console.log('Pressed')} />
+ */
 
 // Simple file extension to media type mapping for quick lookups
 const EXTENSION_MAP: Record<string, MediaType> = {
@@ -38,14 +62,22 @@ function getMediaTypeFromUrl(url: string): MediaType {
   return extension ? EXTENSION_MAP[extension] || 'other' : 'other'
 }
 
+// Helper function to detect if a URI is local
+function isLocalUri(uri: string): boolean {
+  return uri.startsWith('file://') || uri.startsWith('content://') || uri.startsWith('/') || uri.includes('ExponentExperienceData')
+}
+
 interface FilePreviewProps {
-  fileId: string
+  fileId?: string  // For remote files stored in SelfDB
+  localUri?: string  // For local files (from camera/photo library)
   style?: object
   onPress?: () => void
+  // Note: Provide either fileId OR localUri, not both
 }
 
 export const FilePreview: React.FC<FilePreviewProps> = ({ 
   fileId, 
+  localUri,
   style,
   onPress 
 }) => {
@@ -54,22 +86,51 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
   const [error, setError] = useState<string | null>(null)
   const [publicUrl, setPublicUrl] = useState<string | null>(null)
   const [isVideoPlaying, setIsVideoPlaying] = useState(false)
+  const [isLocalFile, setIsLocalFile] = useState(false)
   // imageDimensions state is not strictly needed for auto-sizing,
   // but could be used for more advanced layout if desired.
   // Keeping it for now as it's not hurting.
   const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number } | null>(null);
 
-
   useEffect(() => {
+    // Validate that only one of fileId or localUri is provided
+    if (fileId && localUri) {
+      console.warn('FilePreview: Both fileId and localUri provided. Using localUri and ignoring fileId.')
+    }
+
+    if (localUri) {
+      // Handle local file
+      setIsLocalFile(true)
+      setPublicUrl(localUri)
+      setFile({
+        filename: localUri.split('/').pop() || 'local_file',
+        created_at: new Date().toISOString(),
+        size: 0,
+        content_type: ''
+      } as FileMetadata)
+      setLoading(false)
+      setError(null)
+      console.log('📱 Local file set:', localUri)
+      return
+    }
+
     if (!fileId) {
+      setLoading(false)
+      setError('No file provided')
+      return
+    }
+
+    setIsLocalFile(false)
+    loadFile()
+  }, [fileId, localUri])
+
+  const loadFile = async () => {
+    if (!fileId) {
+      setError('No file ID provided')
       setLoading(false)
       return
     }
 
-    loadFile()
-  }, [fileId])
-
-  const loadFile = async () => {
     try {
       setLoading(true)
       setError(null)
@@ -118,7 +179,7 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
     )
   }
 
-  if (error || !file || !publicUrl) {
+  if (error || !publicUrl || (!file && !localUri)) {
     return (
       <View style={[styles.container, styles.errorContainer, style]}>
         <Text style={styles.errorText}>📎 Attachment unavailable</Text>
@@ -126,7 +187,9 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
     )
   }
 
-  const mediaType = getMediaTypeFromUrl(file.filename || publicUrl)
+  const mediaType = isLocalFile 
+    ? getMediaTypeFromUrl(localUri || '') 
+    : getMediaTypeFromUrl(file?.filename || publicUrl)
 
   const renderContent = () => {
     switch (mediaType) {
@@ -165,13 +228,41 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
               resizeMode="cover" // or 'contain' if you want black bars for aspect ratio
               paused={!isVideoPlaying}
               poster={undefined} // You might want a poster image for videos
-              onLoad={() => console.log('Video loaded')}
-              onError={(error) => console.error('Video error:', error)}
+              onLoad={(data) => {
+                console.log('Video loaded:', data)
+                // For local videos, you might want to handle this differently
+                if (isLocalFile) {
+                  console.log('Local video loaded successfully')
+                }
+              }}
+              onError={(error) => {
+                console.error('Video error:', error)
+                // For local videos, provide more specific error handling
+                if (isLocalFile) {
+                  console.error('Local video playback error - check file format and permissions')
+                }
+              }}
+              // Additional props that might help with local video playback
+              onReadyForDisplay={() => {
+                if (isLocalFile) {
+                  console.log('Local video ready for display')
+                }
+              }}
+              // Ensure proper handling for different video sources
+              {...(isLocalFile ? {
+                // Local video specific props if needed
+                // You might need to adjust these based on react-native-video version
+              } : {
+                // Remote video specific props if needed
+              })}
             />
             {!isVideoPlaying && (
               <TouchableOpacity
                 style={styles.playButtonOverlay}
-                onPress={() => setIsVideoPlaying(true)}
+                onPress={() => {
+                  console.log(`Starting ${isLocalFile ? 'local' : 'remote'} video playback`)
+                  setIsVideoPlaying(true)
+                }}
                 activeOpacity={0.8}
               >
                 <View style={styles.playButton}>
@@ -182,7 +273,10 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
             {isVideoPlaying && (
               <TouchableOpacity
                 style={styles.videoTouchArea}
-                onPress={() => setIsVideoPlaying(false)}
+                onPress={() => {
+                  console.log(`Pausing ${isLocalFile ? 'local' : 'remote'} video playback`)
+                  setIsVideoPlaying(false)
+                }}
                 activeOpacity={1}
               />
             )}
@@ -194,7 +288,7 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
           <View style={styles.mediaPlaceholder}>
             <Text style={styles.mediaIcon}>🎵</Text>
             <Text style={styles.mediaText}>Audio</Text>
-            <Text style={styles.fileName}>{file.filename}</Text>
+            <Text style={styles.fileName}>{file?.filename || (localUri ? localUri.split('/').pop() : 'Audio file')}</Text>
           </View>
         )
       
@@ -203,7 +297,7 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
           <View style={styles.mediaPlaceholder}>
             <Text style={styles.mediaIcon}>📄</Text>
             <Text style={styles.mediaText}>PDF</Text>
-            <Text style={styles.fileName}>{file.filename}</Text>
+            <Text style={styles.fileName}>{file?.filename || (localUri ? localUri.split('/').pop() : 'PDF file')}</Text>
           </View>
         )
       
@@ -212,7 +306,7 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
           <View style={styles.mediaPlaceholder}>
             <Text style={styles.mediaIcon}>📎</Text>
             <Text style={styles.mediaText}>File</Text>
-            <Text style={styles.fileName}>{file.filename}</Text>
+            <Text style={styles.fileName}>{file?.filename || (localUri ? localUri.split('/').pop() : 'File')}</Text>
           </View>
         )
     }

@@ -665,10 +665,10 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTop
 
                   {editCommentFile && (
                     <View style={styles.filePreview}>
-                      <Image 
-                        source={{ uri: editCommentFile }} 
+                      {/* Use FilePreview component for better handling of videos and other media types */}
+                      <FilePreview 
+                        localUri={editCommentFile}
                         style={styles.previewImage}
-                        contentFit="cover"
                       />
                       <TouchableOpacity
                         style={styles.removeFileButton}
@@ -843,10 +843,10 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTop
 
               {selectedFile && (
                 <View style={styles.filePreview}>
-                  <Image 
-                    source={{ uri: selectedFile }} 
+                  {/* Use FilePreview component for better handling of videos and other media types */}
+                  <FilePreview 
+                    localUri={selectedFile}
                     style={styles.previewImage}
-                    contentFit="cover"
                   />
                   <TouchableOpacity
                     style={styles.removeFileButton}
