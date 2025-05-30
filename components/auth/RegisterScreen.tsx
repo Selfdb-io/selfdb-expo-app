@@ -86,6 +86,8 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
               onChangeText={setPassword}
               secureTextEntry
               autoCapitalize="none"
+              textContentType="none"
+              passwordRules=""
             />
             
             <TextInput
@@ -96,6 +98,8 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
               onChangeText={setConfirmPassword}
               secureTextEntry
               autoCapitalize="none"
+              textContentType="none"
+              passwordRules=""
             />
             
             <TouchableOpacity

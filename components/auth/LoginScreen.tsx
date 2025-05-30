@@ -74,6 +74,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               onChangeText={setPassword}
               secureTextEntry
               autoCapitalize="none"
+              textContentType="none"
+              passwordRules=""
             />
             
             <TouchableOpacity
