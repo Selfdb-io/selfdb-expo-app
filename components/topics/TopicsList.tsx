@@ -18,6 +18,7 @@ import { FilePreview } from '../FilePreview'
 import { TopicDetail } from './TopicDetail'
 import { ThemedText } from '@/components/ThemedText'
 import { ThemedView } from '@/components/ThemedView'
+import SvgComponent from '@/assets/images/logo'
 
 interface TopicsListProps {
   onCreateTopic?: () => void
@@ -238,7 +239,10 @@ export const TopicsList: React.FC<TopicsListProps> = ({
       {/* Header - only show when showHeader is true */}
       {showHeader && (
         <ThemedView style={styles.header}>
-          <ThemedText type="subtitle">Open Discussion Board</ThemedText>
+          <View style={styles.logoContainer}>
+            <SvgComponent width={32} height={32} />
+            
+          </View>
           <View style={styles.headerActions}>
             {isAuthenticated ? (
               <View style={styles.userSection}>
@@ -434,6 +438,14 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
+  },
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  headerTitle: {
+    fontSize: 18,
   },
   headerActions: {
     flexDirection: 'row',
