@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Modal, StatusBar } from 'react-native'
+import { View, Text, TouchableOpacity, ActivityIndicator, Modal, StatusBar } from 'react-native'
 import { Image } from 'expo-image'
 import Video from 'react-native-video' // Your current video player
 import { Ionicons } from '@expo/vector-icons'
@@ -174,7 +174,7 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
 
   if (loading) {
     return (
-      <View style={[styles.container, styles.centered, style]}>
+      <View className="rounded-lg overflow-hidden bg-gray-100 max-w-full justify-center items-center" style={[{ height: 100 }, style]}>
         <ActivityIndicator size="small" color="#007AFF" />
       </View>
     )
@@ -182,8 +182,8 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
 
   if (error || !publicUrl || (!file && !localUri)) {
     return (
-      <View style={[styles.container, styles.errorContainer, style]}>
-        <Text style={styles.errorText}>📎 Attachment unavailable</Text>
+      <View className="rounded-lg overflow-hidden bg-red-50 max-w-full justify-center items-center p-2.5" style={[{ height: 100 }, style]}>
+        <Text className="text-red-600 text-xs">📎 Attachment unavailable</Text>
       </View>
     )
   }
@@ -198,82 +198,65 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
         return (
           <Image
             source={{ uri: publicUrl }}
-            // Apply base image style and any passed style.
-            // styles.image will now correctly handle auto height.
-            style={[styles.image, style]} 
-            contentFit="contain" // Ensures the whole image is visible
+            style={{ width: '100%', height: 256 }}
+            contentFit="cover"
             transition={200}
             placeholder="📷"
-            // You can keep or remove onLoadEnd depending on if you need dimensions for other logic
-            // onLoadEnd={(event) => {
-            //   if (event.nativeEvent.width && event.nativeEvent.height) {
-            //     setImageDimensions({
-            //       width: event.nativeEvent.width,
-            //       height: event.nativeEvent.height,
-            //     });
-            //   }
-            // }}
+            onError={(error) => {
+              console.error('Image load error:', error)
+            }}
+            onLoad={() => {
+              console.log('Image loaded successfully:', publicUrl)
+            }}
           />
         )
       
       case 'video':
         return (
-          // For video, you might want a fixed height for the container,
-          // or dynamically set it if you can fetch video dimensions.
-          // Your current setup uses `height: 300` in styles.videoContainer.
-          <View style={[styles.videoContainer, style]}>
+          <View style={{ position: 'relative', width: '100%', height: 256 }}>
             <Video
               source={{ uri: publicUrl }}
-              style={styles.video}
+              style={{ width: '100%', height: '100%', backgroundColor: '#f3f4f6' }}
               controls={false}
-              resizeMode="cover" // or 'contain' if you want black bars for aspect ratio
+              resizeMode="cover"
               paused={!isVideoPlaying}
-              poster={undefined} // You might want a poster image for videos
+              poster={undefined}
               onLoad={(data) => {
                 console.log('Video loaded:', data)
-                // For local videos, you might want to handle this differently
                 if (isLocalFile) {
                   console.log('Local video loaded successfully')
                 }
               }}
               onError={(error) => {
                 console.error('Video error:', error)
-                // For local videos, provide more specific error handling
                 if (isLocalFile) {
                   console.error('Local video playback error - check file format and permissions')
                 }
               }}
-              // Additional props that might help with local video playback
               onReadyForDisplay={() => {
                 if (isLocalFile) {
                   console.log('Local video ready for display')
                 }
               }}
-              // Ensure proper handling for different video sources
-              {...(isLocalFile ? {
-                // Local video specific props if needed
-                // You might need to adjust these based on react-native-video version
-              } : {
-                // Remote video specific props if needed
-              })}
+              {...(isLocalFile ? {} : {})}
             />
             {!isVideoPlaying && (
               <TouchableOpacity
-                style={styles.playButtonOverlay}
+                className="absolute top-0 left-0 right-0 bottom-0 justify-center items-center bg-black/30"
                 onPress={() => {
                   console.log(`Starting ${isLocalFile ? 'local' : 'remote'} video playback`)
                   setIsVideoPlaying(true)
                 }}
                 activeOpacity={0.8}
               >
-                <View style={styles.playButton}>
-                  <Ionicons name="play" size={28} color="white" style={styles.playIcon} />
+                <View className="bg-black/70 rounded-full w-16 h-16 justify-center items-center border-2 border-white">
+                  <Ionicons name="play" size={28} color="white" style={{ marginLeft: 2 }} />
                 </View>
               </TouchableOpacity>
             )}
             {isVideoPlaying && (
               <TouchableOpacity
-                style={styles.videoTouchArea}
+                className="absolute top-0 left-0 right-0 bottom-0"
                 onPress={() => {
                   console.log(`Pausing ${isLocalFile ? 'local' : 'remote'} video playback`)
                   setIsVideoPlaying(false)
@@ -281,10 +264,9 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
                 activeOpacity={1}
               />
             )}
-            {/* Fullscreen button - only show when video is playing */}
             {isVideoPlaying && (
               <TouchableOpacity
-                style={styles.fullscreenButton}
+                className="absolute top-2.5 right-2.5 bg-black/70 rounded-full w-10 h-10 justify-center items-center"
                 onPress={() => setIsFullscreen(true)}
                 activeOpacity={0.8}
               >
@@ -296,28 +278,34 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
       
       case 'audio':
         return (
-          <View style={styles.mediaPlaceholder}>
-            <Text style={styles.mediaIcon}>🎵</Text>
-            <Text style={styles.mediaText}>Audio</Text>
-            <Text style={styles.fileName}>{file?.filename || (localUri ? localUri.split('/').pop() : 'Audio file')}</Text>
+          <View className="justify-center items-center p-5 bg-gray-100 border border-gray-300 border-dashed max-w-full" style={{ height: 256 }}>
+            <Text className="text-4xl mb-2">🎵</Text>
+            <Text className="text-sm font-medium text-gray-600 mb-1">Audio</Text>
+            <Text className="text-xs text-gray-400 text-center max-w-full">
+              {file?.filename || (localUri ? localUri.split('/').pop() : 'Audio file')}
+            </Text>
           </View>
         )
       
       case 'pdf':
         return (
-          <View style={styles.mediaPlaceholder}>
-            <Text style={styles.mediaIcon}>📄</Text>
-            <Text style={styles.mediaText}>PDF</Text>
-            <Text style={styles.fileName}>{file?.filename || (localUri ? localUri.split('/').pop() : 'PDF file')}</Text>
+          <View className="justify-center items-center p-5 bg-gray-100 border border-gray-300 border-dashed max-w-full" style={{ height: 256 }}>
+            <Text className="text-4xl mb-2">📄</Text>
+            <Text className="text-sm font-medium text-gray-600 mb-1">PDF</Text>
+            <Text className="text-xs text-gray-400 text-center max-w-full">
+              {file?.filename || (localUri ? localUri.split('/').pop() : 'PDF file')}
+            </Text>
           </View>
         )
       
       default:
         return (
-          <View style={styles.mediaPlaceholder}>
-            <Text style={styles.mediaIcon}>📎</Text>
-            <Text style={styles.mediaText}>File</Text>
-            <Text style={styles.fileName}>{file?.filename || (localUri ? localUri.split('/').pop() : 'File')}</Text>
+          <View className="justify-center items-center p-5 bg-gray-100 border border-gray-300 border-dashed max-w-full" style={{ height: 256 }}>
+            <Text className="text-4xl mb-2">📎</Text>
+            <Text className="text-sm font-medium text-gray-600 mb-1">File</Text>
+            <Text className="text-xs text-gray-400 text-center max-w-full">
+              {file?.filename || (localUri ? localUri.split('/').pop() : 'File')}
+            </Text>
           </View>
         )
     }
@@ -334,10 +322,10 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
       onRequestClose={() => setIsFullscreen(false)}
     >
       <StatusBar hidden />
-      <View style={styles.fullscreenContainer}>
+      <View style={{ flex: 1, backgroundColor: 'black', justifyContent: 'center', alignItems: 'center' }}>
         <Video
           source={{ uri: publicUrl! }}
-          style={styles.fullscreenVideo}
+          style={{ width: '100%', height: '100%' }}
           controls={false}
           resizeMode="contain"
           paused={!isVideoPlaying}
@@ -350,10 +338,21 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
         />
         
         {/* Fullscreen Controls */}
-        <View style={styles.fullscreenControls}>
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
           {/* Close button */}
           <TouchableOpacity
-            style={styles.closeButton}
+            style={{
+              position: 'absolute',
+              top: 48,
+              right: 20,
+              backgroundColor: 'rgba(0,0,0,0.7)',
+              borderRadius: 24,
+              width: 48,
+              height: 48,
+              justifyContent: 'center',
+              alignItems: 'center',
+              zIndex: 50
+            }}
             onPress={() => setIsFullscreen(false)}
             activeOpacity={0.8}
           >
@@ -363,12 +362,30 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
           {/* Play/Pause overlay */}
           {!isVideoPlaying && (
             <TouchableOpacity
-              style={styles.fullscreenPlayOverlay}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                justifyContent: 'center',
+                alignItems: 'center',
+                backgroundColor: 'rgba(0,0,0,0.3)'
+              }}
               onPress={() => setIsVideoPlaying(true)}
               activeOpacity={0.8}
             >
-              <View style={styles.fullscreenPlayButton}>
-                <Ionicons name="play" size={40} color="white" style={styles.playIcon} />
+              <View style={{
+                backgroundColor: 'rgba(0,0,0,0.8)',
+                borderRadius: 48,
+                width: 96,
+                height: 96,
+                justifyContent: 'center',
+                alignItems: 'center',
+                borderWidth: 2,
+                borderColor: 'white'
+              }}>
+                <Ionicons name="play" size={40} color="white" style={{ marginLeft: 2 }} />
               </View>
             </TouchableOpacity>
           )}
@@ -376,7 +393,13 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
           {/* Touch area to pause */}
           {isVideoPlaying && (
             <TouchableOpacity
-              style={styles.fullscreenTouchArea}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0
+              }}
               onPress={() => setIsVideoPlaying(false)}
               activeOpacity={1}
             />
@@ -392,178 +415,9 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
       {mediaType === 'video' && renderFullscreenVideo()}
       
       {/* Main Container */}
-      <Container style={[styles.container, style]} onPress={onPress}> 
+      <Container className="rounded-lg overflow-hidden bg-gray-100 max-w-full" style={style} onPress={onPress}> 
         {renderContent()}
       </Container>
     </>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    borderRadius: 8,
-    overflow: 'hidden',
-    backgroundColor: '#f5f5f5',
-    maxWidth: '100%',
-    // The height of this container will now be determined by its content (the image)
-  },
-  centered: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: 100, // This is for loading/error states, which is fine
-  },
-  errorContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 10,
-    backgroundColor: '#fee',
-  },
-  errorText: {
-    color: '#d32f2f',
-    fontSize: 12,
-  },
-  image: {
-    // REMOVED: aspectRatio: 1,
-    // REMOVED: height: 200, // <--- THIS WAS THE PROBLEM! Removed to allow auto-sizing
-    width: '100%', // Makes the image fill the width of its container
-    height: 250, // Crucial: Allows height to be determined by contentFit and width
-    backgroundColor: '#f0f0f0', // Fallback background if image fails to load or during transitions
-    maxWidth: '100%', // Ensures it doesn't exceed parent's width (redundant with width: '100%' but harmless)
-  },
-  video: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#f0f0f0',
-  },
-  videoContainer: {
-    position: 'relative',
-    width: '100%',
-    height: 250, // Fixed height for video container (same as image height for consistency)
-  },
-  playButtonOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-  },
-  playButton: {
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    borderRadius: 35,
-    width: 70,
-    height: 70,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
-    borderColor: 'white',
-  },
-  playIcon: {
-    marginLeft: 2, // Slight offset to center the triangle visually
-  },
-  videoTouchArea: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  fullscreenButton: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    borderRadius: 20,
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  mediaPlaceholder: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#f8f8f8',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderStyle: 'dashed',
-    maxWidth: '100%',
-    // You might want to define a minHeight for placeholders to avoid them collapsing too much
-    minHeight: 250, 
-  },
-  mediaIcon: {
-    fontSize: 32,
-    marginBottom: 8,
-  },
-  mediaText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#666',
-    marginBottom: 4,
-  },
-  fileName: {
-    fontSize: 12,
-    color: '#999',
-    textAlign: 'center',
-    maxWidth: '100%',
-  },
-  // Fullscreen styles
-  fullscreenContainer: {
-    flex: 1,
-    backgroundColor: 'black',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  fullscreenVideo: {
-    width: '100%',
-    height: '100%',
-  },
-  fullscreenControls: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  closeButton: {
-    position: 'absolute',
-    top: 50,
-    right: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    borderRadius: 25,
-    width: 50,
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1000,
-  },
-  fullscreenPlayOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-  },
-  fullscreenPlayButton: {
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    borderRadius: 50,
-    width: 100,
-    height: 100,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
-    borderColor: 'white',
-  },
-  fullscreenTouchArea: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-})

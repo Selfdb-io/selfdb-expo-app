@@ -271,7 +271,7 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTop
           <Text className="text-sm text-gray-600 mb-3 leading-5">{topic.content}</Text>
           {topic.file_id && (
             <View className="mb-3">
-              <FilePreview fileId={topic.file_id} className="rounded-lg min-h-38 max-h-100" />
+              <FilePreview fileId={topic.file_id}/>
             </View>
           )}
           <View className="flex-row justify-between items-center">
@@ -309,7 +309,7 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTop
               {comment.file_id && (
                 <>
                   <View className="mt-3 mb-3">
-                    <FilePreview fileId={comment.file_id} className="rounded-lg min-h-38 max-h-100" />
+                    <FilePreview fileId={comment.file_id}/>
                   </View>
                   <View className="flex-row justify-between items-center mt-3">
                     <Text className="text-xs text-primary-500 font-medium">{comment.author_name}</Text>

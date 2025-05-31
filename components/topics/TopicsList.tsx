@@ -193,7 +193,7 @@ export const TopicsList: React.FC<TopicsListProps> = ({
         </Text>
         {item.file_id && (
           <View className="mb-3">
-            <FilePreview fileId={item.file_id} className="rounded-md min-h-38 max-h-100" />
+            <FilePreview fileId={item.file_id} />
           </View>
         )}
         <View className="flex-row justify-between items-center mb-1">

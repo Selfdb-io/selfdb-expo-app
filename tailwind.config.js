@@ -69,6 +69,11 @@ module.exports = {
       spacing: {
         '18': '4.5rem',
         '88': '22rem',
+        // Custom values for FilePreview component
+        '25': '6.25rem',    // 100px (h-25)
+        '62.5': '15.625rem', // 250px (h-62.5)
+        '17.5': '4.375rem',  // 70px (w-17.5)
+        '12.5': '3.125rem',  // 50px (w-12.5)
       },
       borderRadius: {
         'lg': '8px',

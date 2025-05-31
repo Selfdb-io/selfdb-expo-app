@@ -399,10 +399,12 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
 
               {selectedFile && (
                 <View className="bg-gray-50 border border-gray-300 rounded-lg p-3 items-center">
-                  <FilePreview 
-                    localUri={selectedFile}
-                    className="w-full h-38 rounded-md mb-3"
-                  />
+                  <View className="w-full mb-3">
+                    <FilePreview 
+                      localUri={selectedFile}
+                      style={{ width: '100%', height: 250 }}
+                    />
+                  </View>
                   <TouchableOpacity
                     className="bg-red-500 py-2 px-3 rounded-md"
                     onPress={removeFile}
@@ -415,18 +417,19 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
               {/* Show current file if editing and no new file selected */}
               {isEditMode && initialTopic?.file_id && !selectedFile && !removeCurrentFile && (
                 <View className="bg-gray-50 border border-gray-300 rounded-lg p-3 mt-3">
-                  <View className="flex-row justify-between items-center">
-                    <Text className="text-xs text-gray-600 mb-2">Current attachment:</Text>
-                    <TouchableOpacity
-                      className="flex-row items-center bg-red-500 p-2 rounded-md"
-                      onPress={handleRemoveCurrentFile}
-                      disabled={loading}
-                    >
-                      <Ionicons name="close-circle" size={20} color="white" />
-                      <Text className="text-white text-xs font-medium ml-1">Remove</Text>
-                    </TouchableOpacity>
+                  <View className="w-full mb-3">
+                    <FilePreview 
+                      fileId={initialTopic.file_id}
+                      style={{ width: '100%', height: 250 }}
+                    />
                   </View>
-                  <FilePreview fileId={initialTopic.file_id} className="rounded-md min-h-38 max-h-75" />
+                  <TouchableOpacity
+                    className="bg-red-500 py-2 px-3 rounded-md"
+                    onPress={handleRemoveCurrentFile}
+                    disabled={loading}
+                  >
+                    <Text className="text-white text-sm font-medium">✕ Remove</Text>
+                  </TouchableOpacity>
                 </View>
               )}
 
