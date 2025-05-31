@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react'
 import {
   View,
@@ -9,11 +8,11 @@ import {
   RefreshControl,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+import { router } from 'expo-router'
 import { db, realtime } from '@/services/selfdb'
 import { Topic } from '@/types'
 import { formatDate } from '@/lib/utils'
 import { FilePreview, preloadFileMetadata } from '../FilePreview'
-import { TopicDetail } from './TopicDetail'
 import { ThemedText } from '@/components/ThemedText'
 import { ThemedView } from '@/components/ThemedView'
 import SvgComponent from '@/assets/images/logo'
@@ -38,7 +37,6 @@ export const TopicsList: React.FC<TopicsListProps> = ({
   const [topics, setTopics] = useState<Topic[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
-  const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null)
   const [visibleTopics, setVisibleTopics] = useState<Set<string>>(new Set())
 
   const loadTopics = async () => {
@@ -109,11 +107,6 @@ export const TopicsList: React.FC<TopicsListProps> = ({
               newVisible.delete(deletedTopicId)
               return newVisible
             })
-            
-            // If the deleted topic is currently selected, go back to list
-            if (selectedTopicId === deletedTopicId) {
-              setSelectedTopicId(null)
-            }
           } else if (payload.eventType === 'INSERT') {
             // Add new topic to the beginning of the list
             const newTopic = payload.new as Topic
@@ -170,7 +163,7 @@ export const TopicsList: React.FC<TopicsListProps> = ({
   }
 
   const handleTopicPress = (topic: Topic) => {
-    setSelectedTopicId(topic.id.toString())
+    router.push(`/topic/${topic.id.toString()}`)
   }
 
   const renderTopic = ({ item }: { item: Topic }) => {
@@ -231,106 +224,67 @@ export const TopicsList: React.FC<TopicsListProps> = ({
     )
   }
 
-  // Show topic detail if a topic is selected
-  // Note: We now keep both components mounted to prevent image flashing
   return (
     <View className="flex-1 bg-gray-100">
-      {/* Topics List - hide when detail is shown */}
-      <View 
-        className="flex-1" 
-        style={{ 
-          position: selectedTopicId ? 'absolute' : 'relative',
-          opacity: selectedTopicId ? 0 : 1,
-          zIndex: selectedTopicId ? -1 : 1,
-          width: '100%',
-          height: '100%'
-        }}
-        pointerEvents={selectedTopicId ? 'none' : 'auto'}
-      >
-        {/* Header - only show when showHeader is true */}
-        {showHeader && (
-          <View className="flex-row justify-between items-center px-5 pb-2 border-b border-gray-200">
-            <View className="flex-row items-center gap-3">
-              <SvgComponent width={40} height={40} />
-              <Text className="text-black text-lg font-semibold">Open Discussion Board</Text>
-            </View>
-            <View className="flex-row items-center">
-              {isAuthenticated ? (
-                <View className="flex-row items-center gap-3">
-                  <View className="bg-primary-500 w-10 h-10 rounded-full justify-center items-center">
-                    <Text className="text-white text-base font-semibold">
-                      {user?.email?.charAt(0).toUpperCase()}
-                    </Text>
-                  </View>
-                  <TouchableOpacity
-                    className="bg-red-500 p-2 rounded-full justify-center items-center w-10 h-10"
-                    onPress={onLogout}
-                  >
-                    <Ionicons name="log-out" size={20} color="white" />
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <TouchableOpacity
-                  className="bg-primary-500 p-2 rounded-full justify-center items-center w-10 h-10"
-                  onPress={onShowAuthModal}
-                >
-                  <Ionicons name="person-circle" size={20} color="white" />
-                </TouchableOpacity>
-              )}
-            </View>
+      {/* Header - only show when showHeader is true */}
+      {showHeader && (
+        <View className="flex-row justify-between items-center px-5 pb-2 border-b border-gray-200">
+          <View className="flex-row items-center gap-3">
+            <SvgComponent width={40} height={40} />
+            <Text className="text-black text-lg font-semibold">Open Discussion Board</Text>
           </View>
-        )}
-        
-        {/* Topics List */}
-        <FlatList
-          data={topics}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={renderTopic}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-          }
-          contentContainerStyle={{ padding: 15 }}
-          showsVerticalScrollIndicator={false}
-          removeClippedSubviews={true}
-          maxToRenderPerBatch={10}
-          windowSize={10}
-          initialNumToRender={10}
-        />
-        
-        {/* Floating Action Button */}
-        {onCreateTopic && (
-          <TouchableOpacity
-            className="absolute w-14 h-14 items-center justify-center right-5 bottom-5 bg-primary-500 rounded-full shadow-lg"
-            onPress={onCreateTopic}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="add" size={28} color="white" />
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Topic Detail - show when a topic is selected */}
-      {selectedTopicId && (
-        <View 
-          className="flex-1"
-          style={{ 
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            zIndex: 2
-          }}
-        >
-          <TopicDetail 
-            topicId={selectedTopicId} 
-            onBack={() => setSelectedTopicId(null)}
-            onTopicDeleted={() => {
-              setSelectedTopicId(null)
-              loadTopics() // Refetch topics after deletion
-            }}
-          />
+          <View className="flex-row items-center">
+            {isAuthenticated ? (
+              <View className="flex-row items-center gap-3">
+                <View className="bg-primary-500 w-10 h-10 rounded-full justify-center items-center">
+                  <Text className="text-white text-base font-semibold">
+                    {user?.email?.charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  className="bg-red-500 p-2 rounded-full justify-center items-center w-10 h-10"
+                  onPress={onLogout}
+                >
+                  <Ionicons name="log-out" size={20} color="white" />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity
+                className="bg-primary-500 p-2 rounded-full justify-center items-center w-10 h-10"
+                onPress={onShowAuthModal}
+              >
+                <Ionicons name="person-circle" size={20} color="white" />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
+      )}
+      
+      {/* Topics List */}
+      <FlatList
+        data={topics}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={renderTopic}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+        contentContainerStyle={{ padding: 15 }}
+        showsVerticalScrollIndicator={false}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={10}
+        windowSize={10}
+        initialNumToRender={10}
+      />
+      
+      {/* Floating Action Button */}
+      {onCreateTopic && (
+        <TouchableOpacity
+          className="absolute w-14 h-14 items-center justify-center right-5 bottom-5 bg-primary-500 rounded-full shadow-lg"
+          onPress={onCreateTopic}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="add" size={28} color="white" />
+        </TouchableOpacity>
       )}
     </View>
   )

@@ -14,11 +14,11 @@ import { useAuth } from '@/contexts/AuthContext'
 import { db, realtime } from '@/services/selfdb'
 import { Topic, Comment } from '@/types'
 import { formatDate } from '@/lib/utils'
-import { FilePreview, preloadFileMetadata } from '@/components/FilePreview'
+import { FilePreview, preloadFileMetadata } from '../FilePreview'
+import { CreateComment } from './CreateComment'
+import { CreateTopic } from './CreateTopic'
+import { CommentActions } from './CommentActions'
 import { canModifyContent } from '@/lib/permissions'
-import { CreateTopic } from '@/components/topics/CreateTopic'
-import { CreateComment } from '@/components/topics/CreateComment'
-import { CommentActions } from '@/components/topics/CommentActions'
 
 interface TopicDetailProps {
   topicId: string
@@ -147,7 +147,7 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTop
         console.warn('Error cleaning up realtime subscriptions:', error)
       }
     }
-  }, [topicId])
+  }, [topicId, onBack, onTopicDeleted])
 
   const loadTopicAndComments = async () => {
     try {
@@ -264,30 +264,31 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTop
 
   return (
     <>
+      {/* Back Button Header */}
+      <View className="flex-row items-center p-4">
+        <TouchableOpacity 
+          onPress={() => onBack ? onBack() : router.back()}
+        >
+          <Ionicons name="arrow-back" size={24} color="#007AFF" />
+        </TouchableOpacity>
+      </View>
+      
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        {/* Topic Header with Back Button and Title */}
+        {/* Topic Content Area */}
         <View className="bg-white p-5 mb-5">
-          <View className="mb-4">
-            <View className="flex-row justify-between items-center mb-4">
+          {/* Removed custom header with back button and title */}
+          {/* Topic actions (e.g., edit button) can be placed here or in a screen header */}
+          {canModifyContent(topic.user_id, user) && (
+            <View className="flex-row justify-end mb-2">
               <TouchableOpacity
-                className="py-1"
-                onPress={() => onBack ? onBack() : router.back()}
+                className="p-2 rounded-md bg-gray-50"
+                onPress={() => setIsEditingTopic(true)}
               >
-                <Text className="text-primary-500 text-base font-medium">← Back</Text>
+                <Ionicons name="ellipsis-vertical" size={24} color="#007AFF" />
               </TouchableOpacity>
-              
-              {canModifyContent(topic.user_id, user) && (
-                <TouchableOpacity
-                  className="p-2 rounded-md bg-gray-50"
-                  onPress={() => setIsEditingTopic(true)}
-                >
-                  <Ionicons name="ellipsis-vertical" size={24} color="#007AFF" />
-                </TouchableOpacity>
-              )}
             </View>
-            
-            <Text className="text-lg font-bold text-gray-800 mb-2">{topic.title}</Text>
-          </View>
+          )}
+          <Text className="text-2xl font-bold text-gray-800 mb-2">{topic.title}</Text>
           <Text className="text-sm text-gray-600 mb-3 leading-5">{topic.content}</Text>
           {topic.file_id && (
             <View className="mb-3">
@@ -387,14 +388,18 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTop
               if (onTopicDeleted) {
                 onTopicDeleted()
               }
-              if (onBack) {
+              // router.back() should be called by the screen if the topic is deleted
+              // to ensure proper navigation stack handling.
+              if (onBack) { // This onBack might be redundant if router.back() is used by the screen
                 onBack()
+              } else {
+                router.back() // Fallback if onBack is not provided
               }
             }}
             onTopicUpdated={() => {
               // Trigger refetch in parent TopicsList component
-              if (onTopicDeleted) {
-                onTopicDeleted()
+              if (onTopicDeleted) { // This prop seems misused here, consider renaming or clarifying its purpose
+                onTopicDeleted() // This likely should be a different callback, e.g., onTopicDataStale
               }
             }}
           />
