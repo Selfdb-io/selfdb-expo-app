@@ -2,7 +2,6 @@ import React, { useState } from 'react'
 import {
   View,
   TouchableOpacity,
-  StyleSheet,
   Modal,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
@@ -45,7 +44,7 @@ export const CommentActions: React.FC<CommentActionsProps> = ({
     <>
       {/* Three dots menu button */}
       <TouchableOpacity
-        style={styles.menuButton}
+        className="p-2 rounded-md bg-gray-50"
         onPress={() => setIsEditingComment(true)}
       >
         <Ionicons name="ellipsis-vertical" size={20} color="#666" />
@@ -58,7 +57,7 @@ export const CommentActions: React.FC<CommentActionsProps> = ({
         presentationStyle="pageSheet"
         onRequestClose={() => setIsEditingComment(false)}
       >
-        <View style={styles.editCommentModal}>
+        <View className="flex-1 bg-gray-100">
           <CreateComment
             topicId={comment.topic_id.toString()}
             initialComment={comment}
@@ -75,15 +74,3 @@ export const CommentActions: React.FC<CommentActionsProps> = ({
     </>
   )
 }
-
-const styles = StyleSheet.create({
-  menuButton: {
-    padding: 8,
-    borderRadius: 6,
-    backgroundColor: '#f8f9fa',
-  },
-  editCommentModal: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-})

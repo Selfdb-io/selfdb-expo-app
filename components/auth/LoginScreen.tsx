@@ -1,9 +1,6 @@
 import React, { useState } from 'react'
 import {
   View,
-  Text,
-  TextInput,
-  TouchableOpacity,
   Alert,
   ActivityIndicator,
   SafeAreaView,
@@ -11,6 +8,9 @@ import {
   Platform,
 } from 'react-native'
 import { useAuth } from '@/contexts/AuthContext'
+import { ThemedText } from '@/components/ThemedText'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
 
 interface LoginScreenProps {
   onSwitchToRegister: () => void
@@ -51,53 +51,49 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         className="flex-1"
       >
         <View className="flex-1 justify-center px-5">
-          <Text className="text-3xl font-bold text-center mb-10 text-gray-800">Login</Text>
+          <ThemedText type="title" className="text-center mb-10">Login</ThemedText>
           
           <View className="mb-5">
-            <TextInput
-              className="bg-white border border-gray-300 rounded-lg px-4 py-3 mb-4 text-base text-gray-800"
+            <Input
               placeholder="Email"
-              placeholderTextColor="#666"
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
+              className="mb-4"
             />
             
-            <TextInput
-              className="bg-white border border-gray-300 rounded-lg px-4 py-3 mb-4 text-base text-gray-800"
+            <Input
               placeholder="Password"
-              placeholderTextColor="#666"
               value={password}
               onChangeText={setPassword}
               secureTextEntry
               autoCapitalize="none"
               textContentType="none"
               passwordRules=""
+              className="mb-4"
             />
             
-            <TouchableOpacity
-              className={`bg-primary-500 rounded-lg py-4 items-center mt-2.5 ${loading ? 'opacity-60' : ''}`}
-              onPress={handleSubmit}
-              disabled={loading}
-            >
-              {loading ? (
+            {loading ? (
+              <View className="bg-primary-500 rounded-lg py-4 items-center mt-2.5 opacity-60">
                 <ActivityIndicator color="white" />
-              ) : (
-                <Text className="text-white text-base font-semibold">Login</Text>
-              )}
-            </TouchableOpacity>
+              </View>
+            ) : (
+              <Button
+                title="Login"
+                onPress={handleSubmit}
+                className="mt-2.5"
+              />
+            )}
           </View>
           
-          <TouchableOpacity
-            className="py-2.5"
+          <Button
+            title="Don't have an account? Register here"
+            variant="ghost"
             onPress={onSwitchToRegister}
-          >
-            <Text className="text-primary-500 text-center text-sm">
-              Don&apos;t have an account? Register here
-            </Text>
-          </TouchableOpacity>
+            className="py-2.5"
+          />
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

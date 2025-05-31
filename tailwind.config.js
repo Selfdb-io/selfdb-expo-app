@@ -38,7 +38,7 @@ module.exports = {
         success: '#10b981',
         warning: '#f59e0b',
         error: '#ef4444',
-        // Gray scale
+        // Gray scale (enhanced for better design system)
         gray: {
           50: '#f9fafb',
           100: '#f3f4f6',
@@ -51,6 +51,10 @@ module.exports = {
           800: '#1f2937',
           900: '#111827',
         }
+      },
+      fontFamily: {
+        sans: ['System'],
+        mono: ['Menlo', 'Monaco', 'Courier New', 'monospace'],
       },
       fontSize: {
         xs: ['12px', '16px'],
@@ -66,6 +70,21 @@ module.exports = {
         '18': '4.5rem',
         '88': '22rem',
       },
+      borderRadius: {
+        'lg': '8px',
+        'xl': '12px',
+        '2xl': '16px',
+      },
+      boxShadow: {
+        'sm': '0 1px 2px rgba(0, 0, 0, 0.05)',
+        'card': '0 2px 4px rgba(0, 0, 0, 0.1)',
+        'lg': '0 4px 6px rgba(0, 0, 0, 0.1)',
+      },
+      // Custom design tokens for the app
+      backdropBlur: {
+        'xs': '2px',
+        'sm': '4px',
+      }
     },
   },
   plugins: [],
