@@ -73,6 +73,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               textContentType="none"
               passwordRules=""
               className="mb-4"
+              onSubmitEditing={handleSubmit}
+              returnKeyType="done"
             />
             
             {loading ? (
