@@ -82,7 +82,7 @@ export const safeLaunchCamera = async (): Promise<ImagePicker.ImagePickerResult 
     // Launch camera
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ['images','videos','livePhotos'],
-      allowsEditing: true,
+      allowsEditing: false,
       quality: 0.8,
     })
 
@@ -108,7 +108,7 @@ export const safeLaunchImageLibrary = async (): Promise<ImagePicker.ImagePickerR
     // Launch image picker
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images','videos','livePhotos'],
-      allowsEditing: true,
+      allowsEditing: false,
       quality: 0.8,
       allowsMultipleSelection: false,
     })
