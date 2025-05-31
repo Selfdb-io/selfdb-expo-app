@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Modal, StatusBar } from 'react-native'
 import { Image } from 'expo-image'
 import Video from 'react-native-video' // Your current video player
 import { Ionicons } from '@expo/vector-icons'
@@ -87,6 +87,7 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
   const [publicUrl, setPublicUrl] = useState<string | null>(null)
   const [isVideoPlaying, setIsVideoPlaying] = useState(false)
   const [isLocalFile, setIsLocalFile] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(false)
   // imageDimensions state is not strictly needed for auto-sizing,
   // but could be used for more advanced layout if desired.
   // Keeping it for now as it's not hurting.
@@ -280,6 +281,16 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
                 activeOpacity={1}
               />
             )}
+            {/* Fullscreen button - only show when video is playing */}
+            {isVideoPlaying && (
+              <TouchableOpacity
+                style={styles.fullscreenButton}
+                onPress={() => setIsFullscreen(true)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="expand" size={20} color="white" />
+              </TouchableOpacity>
+            )}
           </View>
         )
       
@@ -314,12 +325,77 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
 
   const Container = onPress ? TouchableOpacity : View
 
+  // Fullscreen Video Modal
+  const renderFullscreenVideo = () => (
+    <Modal
+      visible={isFullscreen}
+      animationType="slide"
+      presentationStyle="fullScreen"
+      onRequestClose={() => setIsFullscreen(false)}
+    >
+      <StatusBar hidden />
+      <View style={styles.fullscreenContainer}>
+        <Video
+          source={{ uri: publicUrl! }}
+          style={styles.fullscreenVideo}
+          controls={false}
+          resizeMode="contain"
+          paused={!isVideoPlaying}
+          onLoad={(data) => {
+            console.log('Fullscreen video loaded:', data)
+          }}
+          onError={(error) => {
+            console.error('Fullscreen video error:', error)
+          }}
+        />
+        
+        {/* Fullscreen Controls */}
+        <View style={styles.fullscreenControls}>
+          {/* Close button */}
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={() => setIsFullscreen(false)}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="close" size={24} color="white" />
+          </TouchableOpacity>
+          
+          {/* Play/Pause overlay */}
+          {!isVideoPlaying && (
+            <TouchableOpacity
+              style={styles.fullscreenPlayOverlay}
+              onPress={() => setIsVideoPlaying(true)}
+              activeOpacity={0.8}
+            >
+              <View style={styles.fullscreenPlayButton}>
+                <Ionicons name="play" size={40} color="white" style={styles.playIcon} />
+              </View>
+            </TouchableOpacity>
+          )}
+          
+          {/* Touch area to pause */}
+          {isVideoPlaying && (
+            <TouchableOpacity
+              style={styles.fullscreenTouchArea}
+              onPress={() => setIsVideoPlaying(false)}
+              activeOpacity={1}
+            />
+          )}
+        </View>
+      </View>
+    </Modal>
+  )
+
   return (
-    // Pass the style prop directly to the main container.
-    // Ensure the container using FilePreview doesn't impose a fixed height on it.
-    <Container style={[styles.container, style]} onPress={onPress}> 
-      {renderContent()}
-    </Container>
+    <>
+      {/* Fullscreen Modal */}
+      {mediaType === 'video' && renderFullscreenVideo()}
+      
+      {/* Main Container */}
+      <Container style={[styles.container, style]} onPress={onPress}> 
+        {renderContent()}
+      </Container>
+    </>
   )
 }
 
@@ -362,7 +438,7 @@ const styles = StyleSheet.create({
   videoContainer: {
     position: 'relative',
     width: '100%',
-    height: 300, // This height is still fixed for videos. You might want to make this dynamic too.
+    height: 350, // Fixed height for video container (same as image height for consistency)
   },
   playButtonOverlay: {
     position: 'absolute',
@@ -394,6 +470,17 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
   },
+  fullscreenButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    borderRadius: 20,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   mediaPlaceholder: {
     justifyContent: 'center',
     alignItems: 'center',
@@ -421,5 +508,62 @@ const styles = StyleSheet.create({
     color: '#999',
     textAlign: 'center',
     maxWidth: '100%',
+  },
+  // Fullscreen styles
+  fullscreenContainer: {
+    flex: 1,
+    backgroundColor: 'black',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullscreenVideo: {
+    width: '100%',
+    height: '100%',
+  },
+  fullscreenControls: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    borderRadius: 25,
+    width: 50,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  fullscreenPlayOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  },
+  fullscreenPlayButton: {
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    borderRadius: 50,
+    width: 100,
+    height: 100,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: 'white',
+  },
+  fullscreenTouchArea: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
 })
