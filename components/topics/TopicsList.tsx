@@ -249,10 +249,10 @@ export const TopicsList: React.FC<TopicsListProps> = ({
       >
         {/* Header - only show when showHeader is true */}
         {showHeader && (
-          <ThemedView className="flex-row justify-between items-center px-5 py-4 bg-white border-b border-gray-200">
+          <View className="flex-row justify-between items-center px-5 pb-2 border-b border-gray-200">
             <View className="flex-row items-center gap-3">
-              <SvgComponent width={32} height={32} />
-              <ThemedText type="semiBold">Open Discussion Board</ThemedText>
+              <SvgComponent width={40} height={40} />
+              <Text className="text-black text-lg font-semibold">Open Discussion Board</Text>
             </View>
             <View className="flex-row items-center">
               {isAuthenticated ? (
@@ -274,11 +274,11 @@ export const TopicsList: React.FC<TopicsListProps> = ({
                   className="bg-primary-500 p-2 rounded-full justify-center items-center w-10 h-10"
                   onPress={onShowAuthModal}
                 >
-                  <Ionicons name="person-circle" size={24} color="white" />
+                  <Ionicons name="person-circle" size={20} color="white" />
                 </TouchableOpacity>
               )}
             </View>
-          </ThemedView>
+          </View>
         )}
         
         {/* Topics List */}
