@@ -37,6 +37,36 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, topic, onBack
   // Topic edit/delete state
   const [isEditingTopic, setIsEditingTopic] = useState(false)
 
+  // Calculate canEdit directly without memoization to prevent header render delays
+  const canEdit = canModifyContent(currentTopic?.user_id, user)
+
+  // Header component - render directly without memoization to prevent delays
+  const HeaderComponent = (
+    <View className="flex-row justify-between items-center px-5 pb-2 border-b border-gray-200">
+      <TouchableOpacity 
+        className="p-2 rounded-full justify-center items-center w-10 h-10"
+        onPress={() => onBack ? onBack() : router.back()}
+      >
+        <Ionicons name="arrow-back" size={20} color="#007AFF" />
+      </TouchableOpacity>
+      
+      {/* Always have a center element for layout consistency */}
+      <View className="flex-1" />
+      
+      {/* Edit Button - only show if user can modify content, otherwise show placeholder */}
+      {canEdit ? (
+        <TouchableOpacity
+          className="p-2 rounded-full justify-center items-center w-10 h-10"
+          onPress={() => setIsEditingTopic(true)}
+        >
+          <Ionicons name="ellipsis-vertical" size={20} color="#007AFF" />
+        </TouchableOpacity>
+      ) : (
+        <View className="w-10 h-10" />
+      )}
+    </View>
+  )
+
   useEffect(() => {
     if (topicId && topic) {
       // We should always have a topic passed in, just load comments
@@ -149,7 +179,7 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, topic, onBack
         console.warn('Error cleaning up realtime subscriptions:', error)
       }
     }
-  }, [topicId, onBack, onTopicDeleted, topic])
+  }, [topicId]) // Simplified dependency array - only topicId needed
 
   const loadComments = async () => {
     try {
@@ -229,37 +259,28 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, topic, onBack
   return (
     <>
       {/* Back Button Header */}
-      <View className="flex-row justify-between items-center px-5 pb-2 border-b border-gray-200">
-        <TouchableOpacity 
-          onPress={() => onBack ? onBack() : router.back()}
-        >
-          <Ionicons name="arrow-back" size={24} color="#007AFF" />
-        </TouchableOpacity>
-        
-        {/* Edit Button - only show if user can modify content */}
-        {canModifyContent(currentTopic.user_id, user) && (
-          <TouchableOpacity
-            className="p-2 rounded-md"
-            onPress={() => setIsEditingTopic(true)}
-          >
-            <Ionicons name="ellipsis-vertical" size={24} color="#007AFF" />
-          </TouchableOpacity>
-        )}
-      </View>
+      {HeaderComponent}
       
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         {/* Topic Content Area */}
-        <View className="bg-white p-4 mb-4">
-          <Text className="text-lg font-bold text-gray-800 mb-2">{currentTopic.title}</Text>
-          <Text className="text-sm text-gray-600 mb-3 leading-5">{currentTopic.content}</Text>
-          {currentTopic.file_id && (
-            <View className="mb-3">
-              <FilePreview fileId={currentTopic.file_id}/>
+        <View className="px-4 pt-4 pb-0">
+          <View className="bg-white rounded-lg p-4 mb-4 shadow-sm">
+            <Text className="text-lg font-bold text-gray-800 mb-2">{currentTopic.title}</Text>
+            <Text className="text-sm text-gray-600 mb-3 leading-5">{currentTopic.content}</Text>
+            {currentTopic.file_id && (
+              <View className="mb-3">
+                <FilePreview fileId={currentTopic.file_id}/>
+              </View>
+            )}
+            <View className="flex-row justify-between items-center mb-1">
+              <Text className="text-xs text-primary-500 font-medium">By {currentTopic.author_name}</Text>
+              <Text className="text-xs text-gray-400">{formatDate(currentTopic.created_at)}</Text>
             </View>
-          )}
-          <View className="flex-row justify-between items-center">
-            <Text className="text-xs text-primary-500 font-medium">By {currentTopic.author_name}</Text>
-            <Text className="text-xs text-gray-400">{formatDate(currentTopic.created_at)}</Text>
+            {comments.length > 0 && (
+              <Text className="text-xs text-gray-600 italic">
+                {comments.length} comment{comments.length !== 1 ? 's' : ''}
+              </Text>
+            )}
           </View>
         </View>
 
