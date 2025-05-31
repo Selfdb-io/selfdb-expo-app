@@ -265,7 +265,7 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTop
   return (
     <>
       {/* Back Button Header */}
-      <View className="flex-row items-center p-4">
+      <View className="flex-row items-center px-4 py-2">
         <TouchableOpacity 
           onPress={() => onBack ? onBack() : router.back()}
         >
@@ -275,7 +275,7 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTop
       
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         {/* Topic Content Area */}
-        <View className="bg-white p-5 mb-5">
+        <View className="bg-white p-4 mb-4">
           {/* Removed custom header with back button and title */}
           {/* Topic actions (e.g., edit button) can be placed here or in a screen header */}
           {canModifyContent(topic.user_id, user) && (
@@ -288,7 +288,7 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTop
               </TouchableOpacity>
             </View>
           )}
-          <Text className="text-2xl font-bold text-gray-800 mb-2">{topic.title}</Text>
+          <Text className="text-lg font-bold text-gray-800 mb-2">{topic.title}</Text>
           <Text className="text-sm text-gray-600 mb-3 leading-5">{topic.content}</Text>
           {topic.file_id && (
             <View className="mb-3">
@@ -302,7 +302,7 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTop
         </View>
 
         {/* Comments */}
-        <View className="px-5 mb-5">
+        <View className="px-4 mb-4">
           <Text className="text-lg font-bold text-gray-800 mb-4">
             Comments ({comments.length})
           </Text>
