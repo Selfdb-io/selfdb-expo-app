@@ -22,23 +22,25 @@ import { canModifyContent } from '@/lib/permissions'
 
 interface TopicDetailProps {
   topicId: string
+  topic: Topic // Topic is now required since we always pass it from TopicsList
   onBack?: () => void
   onTopicDeleted?: () => void
 }
 
-export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTopicDeleted }) => {
+export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, topic, onBack, onTopicDeleted }) => {
   const { user, isAuthenticated } = useAuth()
-  const [topic, setTopic] = useState<Topic | null>(null)
+  const [currentTopic, setCurrentTopic] = useState<Topic>(topic)
   const [comments, setComments] = useState<Comment[]>([])
-  const [loading, setLoading] = useState(true)
+  const [commentsLoading, setCommentsLoading] = useState(true)
   const [showAddComment, setShowAddComment] = useState(false)
   
   // Topic edit/delete state
   const [isEditingTopic, setIsEditingTopic] = useState(false)
 
   useEffect(() => {
-    if (topicId) {
-      loadTopicAndComments()
+    if (topicId && topic) {
+      // We should always have a topic passed in, just load comments
+      loadComments()
     }
 
     // Store subscription references
@@ -80,7 +82,7 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTop
             // Topic was updated
             const updatedTopic = payload.new as Topic
             console.log('Topic updated:', updatedTopic.id)
-            setTopic(updatedTopic)
+            setCurrentTopic(updatedTopic)
           }
         })
         
@@ -147,29 +149,18 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTop
         console.warn('Error cleaning up realtime subscriptions:', error)
       }
     }
-  }, [topicId, onBack, onTopicDeleted])
+  }, [topicId, onBack, onTopicDeleted, topic])
 
-  const loadTopicAndComments = async () => {
+  const loadComments = async () => {
     try {
-      setLoading(true)
+      setCommentsLoading(true)
       
-      // Load topic using proper query builder API
-      const topicData = await db
-        .from('topics')
-        .where('id', topicId)
-        .single()
+      if (!currentTopic) return
       
-      if (!topicData) {
-        throw new Error('Topic not found')
-      }
-      
-      const loadedTopic = topicData as unknown as Topic
-      setTopic(loadedTopic)
-
       // Load comments for this topic using proper query builder API
       const commentsData = await db
         .from('comments')
-        .where('topic_id', loadedTopic.id)
+        .where('topic_id', currentTopic.id)
         .order('created_at', 'asc')
         .execute()
       
@@ -178,9 +169,9 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTop
       // Preload file metadata for topic and comments with files
       const preloadPromises = []
       
-      // Preload topic file if it exists
-      if (loadedTopic.file_id) {
-        preloadPromises.push(preloadFileMetadata(loadedTopic.file_id))
+      // Preload topic file if it exists (in case it wasn't preloaded already)
+      if (currentTopic.file_id) {
+        preloadPromises.push(preloadFileMetadata(currentTopic.file_id))
       }
       
       // Preload comment files if they exist
@@ -195,27 +186,9 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTop
         console.warn('Some files failed to preload:', error)
       )
     } catch (error) {
-      console.error('Failed to load topic and comments:', error)
-      Alert.alert('Error', 'Failed to load topic. Please check your connection and try again.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const loadComments = async () => {
-    try {
-      if (!topic) return
-      
-      // Load comments for this topic using proper query builder API
-      const commentsData = await db
-        .from('comments')
-        .where('topic_id', topic.id)
-        .order('created_at', 'asc')
-        .execute()
-      
-      setComments(commentsData as unknown as Comment[])
-    } catch (error) {
       console.error('Failed to load comments:', error)
+    } finally {
+      setCommentsLoading(false)
     }
   }
 
@@ -225,7 +198,7 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTop
   }
 
   const handleTopicEdited = (updatedTopic: Topic) => {
-    setTopic(updatedTopic)
+    setCurrentTopic(updatedTopic)
     setIsEditingTopic(false)
   }
 
@@ -239,16 +212,7 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTop
     setComments(comments.filter(comment => comment.id.toString() !== commentId))
   }
 
-  if (loading) {
-    return (
-      <View className="flex-1 justify-center items-center">
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text className="mt-3 text-gray-600 text-base">Loading topic...</Text>
-      </View>
-    )
-  }
-
-  if (!topic) {
+  if (!currentTopic) {
     return (
       <View className="flex-1 justify-center items-center">
         <Text className="text-red-500 text-lg mb-5">Topic not found</Text>
@@ -265,39 +229,37 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTop
   return (
     <>
       {/* Back Button Header */}
-      <View className="flex-row items-center px-4 py-2">
+      <View className="flex-row justify-between items-center px-5 pb-2 border-b border-gray-200">
         <TouchableOpacity 
           onPress={() => onBack ? onBack() : router.back()}
         >
           <Ionicons name="arrow-back" size={24} color="#007AFF" />
         </TouchableOpacity>
+        
+        {/* Edit Button - only show if user can modify content */}
+        {canModifyContent(currentTopic.user_id, user) && (
+          <TouchableOpacity
+            className="p-2 rounded-md"
+            onPress={() => setIsEditingTopic(true)}
+          >
+            <Ionicons name="ellipsis-vertical" size={24} color="#007AFF" />
+          </TouchableOpacity>
+        )}
       </View>
       
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         {/* Topic Content Area */}
         <View className="bg-white p-4 mb-4">
-          {/* Removed custom header with back button and title */}
-          {/* Topic actions (e.g., edit button) can be placed here or in a screen header */}
-          {canModifyContent(topic.user_id, user) && (
-            <View className="flex-row justify-end mb-2">
-              <TouchableOpacity
-                className="p-2 rounded-md bg-gray-50"
-                onPress={() => setIsEditingTopic(true)}
-              >
-                <Ionicons name="ellipsis-vertical" size={24} color="#007AFF" />
-              </TouchableOpacity>
-            </View>
-          )}
-          <Text className="text-lg font-bold text-gray-800 mb-2">{topic.title}</Text>
-          <Text className="text-sm text-gray-600 mb-3 leading-5">{topic.content}</Text>
-          {topic.file_id && (
+          <Text className="text-lg font-bold text-gray-800 mb-2">{currentTopic.title}</Text>
+          <Text className="text-sm text-gray-600 mb-3 leading-5">{currentTopic.content}</Text>
+          {currentTopic.file_id && (
             <View className="mb-3">
-              <FilePreview fileId={topic.file_id}/>
+              <FilePreview fileId={currentTopic.file_id}/>
             </View>
           )}
           <View className="flex-row justify-between items-center">
-            <Text className="text-xs text-primary-500 font-medium">By {topic.author_name}</Text>
-            <Text className="text-xs text-gray-400">{formatDate(topic.created_at)}</Text>
+            <Text className="text-xs text-primary-500 font-medium">By {currentTopic.author_name}</Text>
+            <Text className="text-xs text-gray-400">{formatDate(currentTopic.created_at)}</Text>
           </View>
         </View>
 
@@ -307,41 +269,48 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTop
             Comments ({comments.length})
           </Text>
           
-          {comments.map((comment) => (
-            <View key={comment.id} className="bg-white p-4 rounded-lg mb-3">
-              <View className="flex-row justify-between items-start gap-3">
-                <View className="flex-1">
-                  <Text className="text-sm text-gray-600 leading-5 mb-3">{comment.content}</Text>
-                  {!comment.file_id && (
-                    <View className="flex-row justify-between items-center">
+          {commentsLoading ? (
+            <View className="flex-row justify-center items-center py-8">
+              <ActivityIndicator size="small" color="#007AFF" />
+              <Text className="ml-2 text-gray-600">Loading comments...</Text>
+            </View>
+          ) : (
+            comments.map((comment) => (
+              <View key={comment.id} className="bg-white p-4 rounded-lg mb-3">
+                <View className="flex-row justify-between items-start gap-3">
+                  <View className="flex-1">
+                    <Text className="text-sm text-gray-600 leading-5 mb-3">{comment.content}</Text>
+                    {!comment.file_id && (
+                      <View className="flex-row justify-between items-center">
+                        <Text className="text-xs text-primary-500 font-medium">{comment.author_name}</Text>
+                        <Text className="text-xs text-gray-400">
+                          {formatDate(comment.created_at)}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                  <CommentActions
+                    comment={comment}
+                    onCommentUpdated={handleCommentUpdated}
+                    onCommentDeleted={handleCommentDeleted}
+                  />
+                </View>
+                {comment.file_id && (
+                  <>
+                    <View className="mt-3 mb-3">
+                      <FilePreview fileId={comment.file_id}/>
+                    </View>
+                    <View className="flex-row justify-between items-center mt-3">
                       <Text className="text-xs text-primary-500 font-medium">{comment.author_name}</Text>
                       <Text className="text-xs text-gray-400">
                         {formatDate(comment.created_at)}
                       </Text>
                     </View>
-                  )}
-                </View>
-                <CommentActions
-                  comment={comment}
-                  onCommentUpdated={handleCommentUpdated}
-                  onCommentDeleted={handleCommentDeleted}
-                />
+                  </>
+                )}
               </View>
-              {comment.file_id && (
-                <>
-                  <View className="mt-3 mb-3">
-                    <FilePreview fileId={comment.file_id}/>
-                  </View>
-                  <View className="flex-row justify-between items-center mt-3">
-                    <Text className="text-xs text-primary-500 font-medium">{comment.author_name}</Text>
-                    <Text className="text-xs text-gray-400">
-                      {formatDate(comment.created_at)}
-                    </Text>
-                  </View>
-                </>
-              )}
-            </View>
-          ))}
+            ))
+          )}
         </View>
       </ScrollView>
 
@@ -379,7 +348,7 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTop
       >
         <View className="flex-1 bg-gray-100">
           <CreateTopic
-            initialTopic={topic}
+            initialTopic={currentTopic}
             onTopicCreated={handleTopicEdited}
             onCancel={() => setIsEditingTopic(false)}
             onEditComplete={() => setIsEditingTopic(false)}

@@ -163,7 +163,13 @@ export const TopicsList: React.FC<TopicsListProps> = ({
   }
 
   const handleTopicPress = (topic: Topic) => {
-    router.push(`/topic/${topic.id.toString()}`)
+    router.push({
+      pathname: "/topic/[topicId]",
+      params: { 
+        topicId: topic.id.toString(),
+        topicData: JSON.stringify(topic) 
+      }
+    })
   }
 
   const renderTopic = ({ item }: { item: Topic }) => {
