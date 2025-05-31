@@ -6,6 +6,52 @@ import { Ionicons } from '@expo/vector-icons'
 import { storage } from '@/services/selfdb'
 import { FileMetadata, MediaType } from '@/types'
 
+// Metadata cache to prevent redundant API calls
+const metadataCache = new Map<string, {
+  file: FileMetadata
+  publicUrl: string
+  timestamp: number
+}>()
+
+// Cache duration: 5 minutes
+const CACHE_DURATION = 5 * 60 * 1000
+
+// Clean up expired cache entries
+const cleanupCache = () => {
+  const now = Date.now()
+  for (const [key, value] of metadataCache.entries()) {
+    if (now - value.timestamp > CACHE_DURATION) {
+      metadataCache.delete(key)
+    }
+  }
+}
+
+// Run cleanup every 2 minutes
+setInterval(cleanupCache, 2 * 60 * 1000)
+
+// Global function to preload image metadata (can be called from parent components)
+export const preloadFileMetadata = async (fileId: string): Promise<void> => {
+  if (!fileId || metadataCache.has(fileId)) return
+  
+  try {
+    console.log('🔄 Preloading metadata for file:', fileId)
+    const viewResponse = await storage.files.getPublicFileViewInfo(fileId).catch(() => 
+      storage.files.getFileViewInfo(fileId)
+    )
+    
+    if (viewResponse?.data?.file_metadata && viewResponse?.data?.view_url) {
+      metadataCache.set(fileId, {
+        file: viewResponse.data.file_metadata,
+        publicUrl: viewResponse.data.view_url,
+        timestamp: Date.now()
+      })
+      console.log('✅ Preloaded metadata for file:', fileId)
+    }
+  } catch (error) {
+    console.warn('Failed to preload metadata for file:', fileId, error)
+  }
+}
+
 /**
  * FilePreview Component
  * 
@@ -13,10 +59,18 @@ import { FileMetadata, MediaType } from '@/types'
  * - Remote files stored in SelfDB (using fileId)
  * - Local files from device camera/photo library (using localUri)
  * 
- * For videos, it provides:
- * - Play/pause controls with custom overlay
- * - Proper handling of both local and remote video sources
+ * Features:
+ * - Native image caching with 'memory-disk' policy for optimal performance
+ * - Metadata caching (5-minute TTL) to prevent redundant API calls
+ * - Automatic cache cleanup to prevent memory leaks
+ * - Play/pause controls for videos with fullscreen support
+ * - Proper handling of both local and remote media sources
  * - Enhanced error handling and logging for debugging
+ * 
+ * Performance Optimizations:
+ * - Images are cached using expo-image's memory-disk caching
+ * - File metadata is cached in memory to avoid API calls on navigation
+ * - Cache is automatically cleaned up every 2 minutes
  * 
  * Usage Examples:
  * 
@@ -136,6 +190,18 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
       setLoading(true)
       setError(null)
 
+      // Check cache first
+      const cachedData = metadataCache.get(fileId)
+      const now = Date.now()
+      
+      if (cachedData && (now - cachedData.timestamp) < CACHE_DURATION) {
+        console.log('📋 Using cached metadata for file:', fileId)
+        setFile(cachedData.file)
+        setPublicUrl(cachedData.publicUrl)
+        setLoading(false)
+        return
+      }
+
       console.log('Loading file with ID:', fileId)
       
       // Try public view endpoint first (for anonymous access)
@@ -159,11 +225,21 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
         throw new Error('Invalid response from file endpoint')
       }
       
-      setFile(viewResponse.data.file_metadata)
-      setPublicUrl(viewResponse.data.view_url)
+      const fileMetadata = viewResponse.data.file_metadata
+      const viewUrl = viewResponse.data.view_url
       
-      console.log('📁 File metadata:', viewResponse.data.file_metadata)
-      console.log('🔗 View URL set to:', viewResponse.data.view_url)
+      // Cache the metadata
+      metadataCache.set(fileId, {
+        file: fileMetadata,
+        publicUrl: viewUrl,
+        timestamp: now
+      })
+      
+      setFile(fileMetadata)
+      setPublicUrl(viewUrl)
+      
+      console.log('📁 File metadata cached:', fileMetadata)
+      console.log('🔗 View URL cached:', viewUrl)
     } catch (err) {
       console.error('Failed to load file:', err)
       setError('Failed to load file')
@@ -200,13 +276,19 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
             source={{ uri: publicUrl }}
             style={{ width: '100%', height: 256 }}
             contentFit="cover"
-            transition={200}
+            transition={0} // Disable transition for cached images
             placeholder="📷"
+            cachePolicy="memory-disk"
+            recyclingKey={fileId || publicUrl} // Help with component recycling
+            priority="high" // High priority for loading
             onError={(error) => {
               console.error('Image load error:', error)
             }}
             onLoad={() => {
-              console.log('Image loaded successfully:', publicUrl)
+              // Only log if not from cache to reduce noise
+              if (!metadataCache.has(fileId || '')) {
+                console.log('Image loaded successfully:', publicUrl)
+              }
             }}
           />
         )

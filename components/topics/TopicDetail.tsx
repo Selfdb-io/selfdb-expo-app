@@ -14,7 +14,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { db, realtime } from '@/services/selfdb'
 import { Topic, Comment } from '@/types'
 import { formatDate } from '@/lib/utils'
-import { FilePreview } from '@/components/FilePreview'
+import { FilePreview, preloadFileMetadata } from '@/components/FilePreview'
 import { canModifyContent } from '@/lib/permissions'
 import { CreateTopic } from '@/components/topics/CreateTopic'
 import { CreateComment } from '@/components/topics/CreateComment'
@@ -174,6 +174,26 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTop
         .execute()
       
       setComments(commentsData as unknown as Comment[])
+      
+      // Preload file metadata for topic and comments with files
+      const preloadPromises = []
+      
+      // Preload topic file if it exists
+      if (loadedTopic.file_id) {
+        preloadPromises.push(preloadFileMetadata(loadedTopic.file_id))
+      }
+      
+      // Preload comment files if they exist
+      preloadPromises.push(
+        ...commentsData
+          .filter((comment: any) => comment.file_id)
+          .map((comment: any) => preloadFileMetadata(comment.file_id))
+      )
+      
+      // Don't wait for preloading to complete, just start it
+      Promise.all(preloadPromises).catch(error => 
+        console.warn('Some files failed to preload:', error)
+      )
     } catch (error) {
       console.error('Failed to load topic and comments:', error)
       Alert.alert('Error', 'Failed to load topic. Please check your connection and try again.')
