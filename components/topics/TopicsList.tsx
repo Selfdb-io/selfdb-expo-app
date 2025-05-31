@@ -4,13 +4,11 @@ import {
   View,
   Text,
   FlatList,
-  StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
-import { SafeAreaView } from 'react-native-safe-area-context'
 import { db, realtime } from '@/services/selfdb'
 import { Topic } from '@/types'
 import { formatDate } from '@/lib/utils'
@@ -171,14 +169,14 @@ export const TopicsList: React.FC<TopicsListProps> = ({
     if (!isVisible) {
       // Show loading skeleton while waiting for content to be synchronized
       return (
-        <View style={[styles.topicCard, styles.loadingSkeleton]}>
-          <View style={styles.skeletonTitle} />
-          <View style={styles.skeletonContent} />
-          <View style={styles.skeletonContent} />
-          {item.file_id && <View style={styles.skeletonImage} />}
-          <View style={styles.skeletonMeta}>
-            <View style={styles.skeletonAuthor} />
-            <View style={styles.skeletonDate} />
+        <View className="bg-gray-50 rounded-lg p-4 mb-4">
+          <View className="h-5 bg-gray-300 rounded mb-2 w-3/4" />
+          <View className="h-4 bg-gray-300 rounded mb-1.5 w-full" />
+          <View className="h-4 bg-gray-300 rounded mb-1.5 w-full" />
+          {item.file_id && <View className="h-50 bg-gray-300 rounded mb-3" />}
+          <View className="flex-row justify-between items-center mb-1">
+            <View className="h-3 bg-gray-300 rounded w-15" />
+            <View className="h-3 bg-gray-300 rounded w-20" />
           </View>
         </View>
       )
@@ -186,24 +184,24 @@ export const TopicsList: React.FC<TopicsListProps> = ({
     
     return (
       <TouchableOpacity
-        style={styles.topicCard}
+        className="bg-white rounded-lg p-4 mb-4 shadow-sm"
         onPress={() => handleTopicPress(item)}
       >
-        <Text style={styles.topicTitle}>{item.title}</Text>
-        <Text style={styles.topicContent} numberOfLines={2}>
+        <Text className="text-lg font-bold text-gray-800 mb-2">{item.title}</Text>
+        <Text className="text-sm text-gray-600 mb-3 leading-5" numberOfLines={2}>
           {item.content}
         </Text>
         {item.file_id && (
-          <View style={styles.imageContainer}>
-            <FilePreview fileId={item.file_id} style={styles.topicImage} />
+          <View className="mb-3">
+            <FilePreview fileId={item.file_id} className="rounded-md min-h-38 max-h-100" />
           </View>
         )}
-        <View style={styles.topicMeta}>
-          <Text style={styles.author}>By {item.author_name}</Text>
-          <Text style={styles.date}>{formatDate(item.created_at)}</Text>
+        <View className="flex-row justify-between items-center mb-1">
+          <Text className="text-xs text-primary-500 font-medium">By {item.author_name}</Text>
+          <Text className="text-xs text-gray-400">{formatDate(item.created_at)}</Text>
         </View>
         {item.comment_count !== undefined && (
-          <Text style={styles.commentCount}>
+          <Text className="text-xs text-gray-600 italic">
             {item.comment_count} comment{item.comment_count !== 1 ? 's' : ''}
           </Text>
         )}
@@ -213,9 +211,9 @@ export const TopicsList: React.FC<TopicsListProps> = ({
 
   if (loading) {
     return (
-      <View style={styles.centered}>
+      <View className="flex-1 justify-center items-center">
         <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Loading topics...</Text>
+        <Text className="mt-3 text-gray-600 text-base">Loading topics...</Text>
       </View>
     )
   }
@@ -235,25 +233,24 @@ export const TopicsList: React.FC<TopicsListProps> = ({
   }
 
   return (
-    <View style={styles.container}>
+    <View className="flex-1 bg-gray-100">
       {/* Header - only show when showHeader is true */}
       {showHeader && (
-        <ThemedView style={styles.header}>
-          <View style={styles.logoContainer}>
+        <ThemedView className="flex-row justify-between items-center px-5 py-4 bg-white border-b border-gray-200">
+          <View className="flex-row items-center gap-3">
             <SvgComponent width={32} height={32} />
-              <ThemedText type="semiBold">Open Discussion Board</ThemedText>
-
+            <ThemedText type="semiBold">Open Discussion Board</ThemedText>
           </View>
-          <View style={styles.headerActions}>
+          <View className="flex-row items-center">
             {isAuthenticated ? (
-              <View style={styles.userSection}>
-                <View style={styles.userAvatar}>
-                  <Text style={styles.userAvatarText}>
+              <View className="flex-row items-center gap-3">
+                <View className="bg-primary-500 w-10 h-10 rounded-full justify-center items-center">
+                  <Text className="text-white text-base font-semibold">
                     {user?.email?.charAt(0).toUpperCase()}
                   </Text>
                 </View>
                 <TouchableOpacity
-                  style={styles.logoutButton}
+                  className="bg-red-500 p-2 rounded-full justify-center items-center w-10 h-10"
                   onPress={onLogout}
                 >
                   <Ionicons name="log-out" size={20} color="white" />
@@ -261,7 +258,7 @@ export const TopicsList: React.FC<TopicsListProps> = ({
               </View>
             ) : (
               <TouchableOpacity
-                style={styles.loginButton}
+                className="bg-primary-500 p-2 rounded-full justify-center items-center w-10 h-10"
                 onPress={onShowAuthModal}
               >
                 <Ionicons name="person-circle" size={24} color="white" />
@@ -279,14 +276,14 @@ export const TopicsList: React.FC<TopicsListProps> = ({
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
-        contentContainerStyle={styles.list}
+        contentContainerStyle={{ padding: 15 }}
         showsVerticalScrollIndicator={false}
       />
       
       {/* Floating Action Button */}
       {onCreateTopic && (
         <TouchableOpacity
-          style={styles.fab}
+          className="absolute w-14 h-14 items-center justify-center right-5 bottom-5 bg-primary-500 rounded-full shadow-lg"
           onPress={onCreateTopic}
           activeOpacity={0.8}
         >
@@ -296,196 +293,3 @@ export const TopicsList: React.FC<TopicsListProps> = ({
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 10,
-    color: '#666',
-    fontSize: 16,
-  },
-  list: {
-    padding: 15,
-  },
-  topicCard: {
-    backgroundColor: 'white',
-    borderRadius: 8,
-    padding: 15,
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  topicTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 8,
-  },
-  topicContent: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 10,
-    lineHeight: 20,
-  },
-  imageContainer: {
-    marginBottom: 10,
-  },
-  topicImage: {
-    borderRadius: 6,
-    minHeight: 150,
-    maxHeight: 400,
-  },
-  topicMeta: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 5,
-  },
-  author: {
-    fontSize: 12,
-    color: '#007AFF',
-    fontWeight: '500',
-  },
-  date: {
-    fontSize: 12,
-    color: '#999',
-  },
-  commentCount: {
-    fontSize: 12,
-    color: '#666',
-    fontStyle: 'italic',
-  },
-  loadingSkeleton: {
-    backgroundColor: '#f9f9f9',
-  },
-  skeletonTitle: {
-    height: 20,
-    backgroundColor: '#e0e0e0',
-    borderRadius: 4,
-    marginBottom: 8,
-    width: '70%',
-  },
-  skeletonContent: {
-    height: 16,
-    backgroundColor: '#e0e0e0',
-    borderRadius: 4,
-    marginBottom: 6,
-    width: '100%',
-  },
-  skeletonImage: {
-    height: 200,
-    backgroundColor: '#e0e0e0',
-    borderRadius: 6,
-    marginBottom: 10,
-  },
-  skeletonMeta: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 5,
-  },
-  skeletonAuthor: {
-    height: 12,
-    backgroundColor: '#e0e0e0',
-    borderRadius: 4,
-    width: 60,
-  },
-  skeletonDate: {
-    height: 12,
-    backgroundColor: '#e0e0e0',
-    borderRadius: 4,
-    width: 80,
-  },
-  fab: {
-    position: 'absolute',
-    width: 56,
-    height: 56,
-    alignItems: 'center',
-    justifyContent: 'center',
-    right: 20,
-    bottom: 20,
-    backgroundColor: '#007AFF',
-    borderRadius: 28,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
-    zIndex: 1000,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  logoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  headerTitle: {
-    fontSize: 18,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  userSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  userAvatar: {
-    backgroundColor: '#007AFF',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  userAvatarText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  logoutButton: {
-    backgroundColor: '#ff4757',
-    padding: 8,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 40,
-    height: 40,
-  },
-  loginButton: {
-    backgroundColor: '#007AFF',
-    padding: 8,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 40,
-    height: 40,
-  },
-})

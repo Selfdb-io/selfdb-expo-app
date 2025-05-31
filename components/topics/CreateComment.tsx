@@ -2,9 +2,7 @@ import React, { useState, useEffect } from 'react'
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
-  StyleSheet,
   Alert,
   ActivityIndicator,
   ScrollView,
@@ -12,12 +10,13 @@ import {
   Platform,
   Modal,
 } from 'react-native'
-import { Image } from 'expo-image'
 import { useAuth } from '@/contexts/AuthContext'
 import { db, storage } from '@/services/selfdb'
 import { Comment } from '@/types'
 import { showMediaPickerOptions, safeLaunchCamera, safeLaunchImageLibrary } from '@/lib/deviceUtils'
 import { FilePreview } from '@/components/FilePreview'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
 import { Ionicons } from '@expo/vector-icons'
 
 interface CreateCommentProps {
@@ -299,36 +298,38 @@ export const CreateComment: React.FC<CreateCommentProps> = ({
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
+      className="flex-1 bg-gray-100"
     >
-      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        <View style={styles.content}>
+      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+        <View className="p-5">
           {/* Header with cancel button */}
-          <View style={styles.header}>
+          <View className="flex-row justify-between items-center mb-5">
             <TouchableOpacity
-              style={styles.cancelHeaderButton}
+              className="p-2 rounded-md bg-gray-50"
               onPress={onCancel}
               disabled={loading}
             >
               <Ionicons name="close" size={24} color="#007AFF" />
             </TouchableOpacity>
-            <Text style={styles.title}>{isEditMode ? 'Edit Comment' : 'Add Comment'}</Text>
+            <Text className="text-2xl font-bold text-gray-800 text-center">
+              {isEditMode ? 'Edit Comment' : 'Add Comment'}
+            </Text>
             {isEditMode ? (
               <TouchableOpacity
-                style={styles.deleteHeaderButton}
+                className="p-2 rounded-md bg-gray-50"
                 onPress={() => setShowDeleteDialog(true)}
                 disabled={loading}
               >
                 <Ionicons name="trash" size={24} color="#ff4757" />
               </TouchableOpacity>
             ) : (
-              <View style={styles.placeholder} />
+              <View className="w-10" />
             )}
           </View>
           
-          <View style={styles.form}>
-            <TextInput
-              style={[styles.input, styles.textArea]}
+          <View className="mb-8">
+            <Input
+              className="h-30 pt-3"
               placeholder="Write your comment..."
               placeholderTextColor="#666"
               value={content}
@@ -340,8 +341,8 @@ export const CreateComment: React.FC<CreateCommentProps> = ({
             />
             
             {!isAuthenticated && !isEditMode && (
-              <TextInput
-                style={styles.input}
+              <Input
+                className="mt-4"
                 placeholder="Your name"
                 placeholderTextColor="#666"
                 value={authorName}
@@ -350,63 +351,64 @@ export const CreateComment: React.FC<CreateCommentProps> = ({
             )}
 
             {/* File Upload Section */}
-            <View style={styles.fileSection}>
+            <View className="mt-4">
               <TouchableOpacity
-                style={styles.uploadButton}
+                className="bg-gray-50 border border-gray-300 rounded-lg py-3 px-4 items-center mb-3"
                 onPress={pickMedia}
                 disabled={loading}
               >
-                <Text style={styles.uploadButtonText}>
+                <Text className="text-primary-500 text-base font-medium">
                   📷 {isEditMode && initialComment?.file_id ? 'Replace Photo or Video' : 'Add Photo or Video'}
                 </Text>
               </TouchableOpacity>
 
               {selectedFile && (
-                <View style={styles.filePreview}>
-                  {/* Use FilePreview component for better handling of videos and other media types */}
+                <View className="bg-gray-50 border border-gray-300 rounded-lg p-3 items-center">
                   <FilePreview 
                     localUri={selectedFile}
-                    style={styles.previewImage}
+                    className="w-full h-38 rounded-md mb-3"
                   />
                   <TouchableOpacity
-                    style={styles.removeFileButton}
+                    className="bg-red-500 py-2 px-3 rounded-md"
                     onPress={removeFile}
                   >
-                    <Text style={styles.removeFileText}>✕ Remove</Text>
+                    <Text className="text-white text-sm font-medium">✕ Remove</Text>
                   </TouchableOpacity>
                 </View>
               )}
               
               {/* Show current file if editing and no new file selected */}
               {isEditMode && initialComment?.file_id && !selectedFile && !removeCurrentFile && (
-                <View style={styles.currentFilePreview}>
-                  <View style={styles.currentFileHeader}>
-                    <Text style={styles.currentFileText}>Current attachment:</Text>
+                <View className="bg-gray-50 border border-gray-300 rounded-lg p-3 mt-3">
+                  <View className="flex-row justify-between items-center">
+                    <Text className="text-xs text-gray-600 mb-2">Current attachment:</Text>
                     <TouchableOpacity
-                      style={styles.removeCurrentFileButton}
+                      className="flex-row items-center bg-red-500 p-2 rounded-md"
                       onPress={handleRemoveCurrentFile}
                       disabled={loading}
                     >
-                      <Ionicons name="close-circle" size={20} color="#ff4757" />
-                      <Text style={styles.removeCurrentFileText}>Remove</Text>
+                      <Ionicons name="close-circle" size={20} color="white" />
+                      <Text className="text-white text-xs font-medium ml-1">Remove</Text>
                     </TouchableOpacity>
                   </View>
-                  <FilePreview fileId={initialComment.file_id} style={styles.currentFileImage} />
+                  <FilePreview fileId={initialComment.file_id} className="rounded-md min-h-38 max-h-75" />
                 </View>
               )}
 
               {/* Show removal notice if file is marked for removal */}
               {isEditMode && initialComment?.file_id && !selectedFile && removeCurrentFile && (
-                <View style={styles.removalNotice}>
-                  <View style={styles.removalHeader}>
+                <View className="bg-red-50 border border-red-500 rounded-lg p-4 mt-3">
+                  <View className="flex-row items-center justify-between">
                     <Ionicons name="warning" size={20} color="#ff4757" />
-                    <Text style={styles.removalText}>Attachment will be removed when you update</Text>
+                    <Text className="text-red-500 text-sm font-medium flex-1 ml-2">
+                      Attachment will be removed when you update
+                    </Text>
                     <TouchableOpacity
-                      style={styles.undoRemovalButton}
+                      className="bg-primary-500 py-1.5 px-3 rounded-md"
                       onPress={() => setRemoveCurrentFile(false)}
                       disabled={loading}
                     >
-                      <Text style={styles.undoRemovalText}>Undo</Text>
+                      <Text className="text-white text-xs font-medium">Undo</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -414,24 +416,26 @@ export const CreateComment: React.FC<CreateCommentProps> = ({
             </View>
           </View>
           
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={[styles.button, styles.cancelButton]}
+          <View className="flex-row justify-between gap-4">
+            <Button
+              title="Cancel"
+              variant="outline"
               onPress={onCancel}
               disabled={loading}
-            >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
+              className="flex-1"
+            />
             
             <TouchableOpacity
-              style={[styles.button, styles.createButton, loading && styles.buttonDisabled]}
+              className={`flex-1 bg-primary-500 py-4 rounded-lg items-center justify-center ${loading ? 'opacity-60' : ''}`}
               onPress={handleSubmit}
               disabled={loading}
             >
               {loading ? (
                 <ActivityIndicator color="white" size="small" />
               ) : (
-                <Text style={styles.createButtonText}>{isEditMode ? 'Update' : 'Post'}</Text>
+                <Text className="text-white text-base font-semibold">
+                  {isEditMode ? 'Update' : 'Post'}
+                </Text>
               )}
             </TouchableOpacity>
           </View>
@@ -446,28 +450,30 @@ export const CreateComment: React.FC<CreateCommentProps> = ({
           animationType="fade"
           onRequestClose={() => setShowDeleteDialog(false)}
         >
-          <View style={styles.deleteModalOverlay}>
-            <View style={styles.deleteModalContent}>
-              <Text style={styles.deleteModalTitle}>Delete Comment?</Text>
-              <Text style={styles.deleteModalText}>
+          <View className="flex-1 bg-black/50 justify-center items-center">
+            <View className="bg-white rounded-xl p-5 mx-5 min-w-75">
+              <Text className="text-lg font-bold text-gray-800 mb-3 text-center">
+                Delete Comment?
+              </Text>
+              <Text className="text-sm text-gray-600 text-center mb-5 leading-5">
                 This action cannot be undone. This will permanently delete this comment.
               </Text>
-              <View style={styles.deleteModalActions}>
-                <TouchableOpacity
-                  style={styles.deleteModalCancel}
+              <View className="flex-row gap-3">
+                <Button
+                  title="Cancel"
+                  variant="outline"
                   onPress={() => setShowDeleteDialog(false)}
-                >
-                  <Text style={styles.deleteModalCancelText}>Cancel</Text>
-                </TouchableOpacity>
+                  className="flex-1"
+                />
                 <TouchableOpacity
-                  style={styles.deleteModalConfirm}
+                  className={`flex-1 bg-red-500 py-3 rounded-lg items-center justify-center ${loading ? 'opacity-60' : ''}`}
                   onPress={handleDeleteComment}
                   disabled={loading}
                 >
                   {loading ? (
                     <ActivityIndicator color="white" size="small" />
                   ) : (
-                    <Text style={styles.deleteModalConfirmText}>Delete</Text>
+                    <Text className="text-white text-base font-semibold">Delete</Text>
                   )}
                 </TouchableOpacity>
               </View>
@@ -478,269 +484,3 @@ export const CreateComment: React.FC<CreateCommentProps> = ({
     </KeyboardAvoidingView>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  scrollContainer: {
-    flex: 1,
-  },
-  content: {
-    padding: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  form: {
-    marginBottom: 30,
-  },
-  input: {
-    backgroundColor: 'white',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    marginBottom: 15,
-    fontSize: 16,
-    color: '#333',
-  },
-  textArea: {
-    height: 120,
-    paddingTop: 12,
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 15,
-  },
-  button: {
-    flex: 1,
-    paddingVertical: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 50,
-  },
-  cancelButton: {
-    backgroundColor: 'white',
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  cancelButtonText: {
-    color: '#666',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  createButton: {
-    backgroundColor: '#007AFF',
-  },
-  createButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  fileSection: {
-    marginBottom: 15,
-  },
-  uploadButton: {
-    backgroundColor: '#f8f9fa',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 15,
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  uploadButtonText: {
-    color: '#007AFF',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  filePreview: {
-    backgroundColor: '#f8f9fa',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 10,
-    alignItems: 'center',
-  },
-  previewImage: {
-    width: '100%',
-    height: 150,
-    borderRadius: 6,
-    marginBottom: 10,
-  },
-  removeFileButton: {
-    backgroundColor: '#ff4757',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-  },
-  removeFileText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  // Header styles
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  cancelHeaderButton: {
-    padding: 8,
-    borderRadius: 6,
-    backgroundColor: '#f8f9fa',
-  },
-  placeholder: {
-    width: 40, // Same width as cancel button to center title
-  },
-  // Current file preview styles
-  currentFilePreview: {
-    backgroundColor: '#f8f9fa',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 10,
-    marginTop: 10,
-  },
-  currentFileText: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 8,
-  },
-  currentFileImage: {
-    borderRadius: 6,
-    minHeight: 150,
-    maxHeight: 300,
-  },
-  // Delete button styles
-  deleteHeaderButton: {
-    padding: 8,
-    borderRadius: 6,
-    backgroundColor: '#f8f9fa',
-  },
-  // Delete modal styles
-  deleteModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  deleteModalContent: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 20,
-    marginHorizontal: 20,
-    minWidth: 300,
-  },
-  deleteModalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  deleteModalText: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 20,
-    lineHeight: 20,
-  },
-  deleteModalActions: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  deleteModalCancel: {
-    backgroundColor: '#f8f9fa',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    flex: 1,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  deleteModalCancelText: {
-    color: '#666',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  deleteModalConfirm: {
-    backgroundColor: '#ff4757',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    flex: 1,
-    alignItems: 'center',
-  },
-  deleteModalConfirmText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  // Current file styles
-  currentFileHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  removeCurrentFileButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ff4757',
-    padding: 8,
-    borderRadius: 6,
-  },
-  removeCurrentFileText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: '500',
-    marginLeft: 5,
-  },
-  // Removal notice styles
-  removalNotice: {
-    backgroundColor: '#fff5f5',
-    borderWidth: 1,
-    borderColor: '#ff4757',
-    borderRadius: 8,
-    padding: 15,
-    marginTop: 10,
-  },
-  removalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  removalText: {
-    color: '#ff4757',
-    fontSize: 14,
-    fontWeight: '500',
-    flex: 1,
-    marginLeft: 8,
-  },
-  undoRemovalButton: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-  },
-  undoRemovalText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: '500',
-  },
-})

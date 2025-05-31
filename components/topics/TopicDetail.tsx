@@ -3,13 +3,11 @@ import {
   View,
   Text,
   ScrollView,
-  StyleSheet,
   TouchableOpacity,
   Alert,
   ActivityIndicator,
   Modal,
 } from 'react-native'
-import { Image } from 'expo-image'
 import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { useAuth } from '@/contexts/AuthContext'
@@ -223,22 +221,22 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTop
 
   if (loading) {
     return (
-      <View style={styles.centered}>
+      <View className="flex-1 justify-center items-center">
         <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Loading topic...</Text>
+        <Text className="mt-3 text-gray-600 text-base">Loading topic...</Text>
       </View>
     )
   }
 
   if (!topic) {
     return (
-      <View style={styles.centered}>
-        <Text style={styles.errorText}>Topic not found</Text>
+      <View className="flex-1 justify-center items-center">
+        <Text className="text-red-500 text-lg mb-5">Topic not found</Text>
         <TouchableOpacity
-          style={styles.backButton}
+          className="bg-primary-500 py-3 px-6 rounded-lg"
           onPress={() => onBack ? onBack() : router.back()}
         >
-          <Text style={styles.backButtonText}>Go Back</Text>
+          <Text className="text-white text-base font-medium">Go Back</Text>
         </TouchableOpacity>
       </View>
     )
@@ -246,21 +244,21 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTop
 
   return (
     <>
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         {/* Topic Header with Back Button and Title */}
-        <View style={styles.topicContainer}>
-          <View style={styles.topicHeader}>
-            <View style={styles.headerRow}>
+        <View className="bg-white p-5 mb-5">
+          <View className="mb-4">
+            <View className="flex-row justify-between items-center mb-4">
               <TouchableOpacity
-                style={styles.backButton}
+                className="py-1"
                 onPress={() => onBack ? onBack() : router.back()}
               >
-                <Text style={styles.backButtonText}>← Back</Text>
+                <Text className="text-primary-500 text-base font-medium">← Back</Text>
               </TouchableOpacity>
               
               {canModifyContent(topic.user_id, user) && (
                 <TouchableOpacity
-                  style={styles.menuButton}
+                  className="p-2 rounded-md bg-gray-50"
                   onPress={() => setIsEditingTopic(true)}
                 >
                   <Ionicons name="ellipsis-vertical" size={24} color="#007AFF" />
@@ -268,35 +266,35 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTop
               )}
             </View>
             
-            <Text style={styles.topicTitle}>{topic.title}</Text>
+            <Text className="text-lg font-bold text-gray-800 mb-2">{topic.title}</Text>
           </View>
-          <Text style={styles.topicContent}>{topic.content}</Text>
+          <Text className="text-sm text-gray-600 mb-3 leading-5">{topic.content}</Text>
           {topic.file_id && (
-            <View style={styles.topicImageContainer}>
-              <FilePreview fileId={topic.file_id} style={styles.topicImage} />
+            <View className="mb-3">
+              <FilePreview fileId={topic.file_id} className="rounded-lg min-h-38 max-h-100" />
             </View>
           )}
-          <View style={styles.topicMeta}>
-            <Text style={styles.author}>By {topic.author_name}</Text>
-            <Text style={styles.date}>{formatDate(topic.created_at)}</Text>
+          <View className="flex-row justify-between items-center">
+            <Text className="text-xs text-primary-500 font-medium">By {topic.author_name}</Text>
+            <Text className="text-xs text-gray-400">{formatDate(topic.created_at)}</Text>
           </View>
         </View>
 
         {/* Comments */}
-        <View style={styles.commentsSection}>
-          <Text style={styles.commentsTitle}>
+        <View className="px-5 mb-5">
+          <Text className="text-lg font-bold text-gray-800 mb-4">
             Comments ({comments.length})
           </Text>
           
           {comments.map((comment) => (
-            <View key={comment.id} style={styles.commentCard}>
-              <View style={styles.commentHeader}>
-                <View style={styles.commentContentContainer}>
-                  <Text style={styles.commentContent}>{comment.content}</Text>
+            <View key={comment.id} className="bg-white p-4 rounded-lg mb-3">
+              <View className="flex-row justify-between items-start gap-3">
+                <View className="flex-1">
+                  <Text className="text-sm text-gray-600 leading-5 mb-3">{comment.content}</Text>
                   {!comment.file_id && (
-                    <View style={styles.commentMeta}>
-                      <Text style={styles.commentAuthor}>{comment.author_name}</Text>
-                      <Text style={styles.commentDate}>
+                    <View className="flex-row justify-between items-center">
+                      <Text className="text-xs text-primary-500 font-medium">{comment.author_name}</Text>
+                      <Text className="text-xs text-gray-400">
                         {formatDate(comment.created_at)}
                       </Text>
                     </View>
@@ -310,12 +308,12 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTop
               </View>
               {comment.file_id && (
                 <>
-                  <View style={styles.commentImageContainer}>
-                    <FilePreview fileId={comment.file_id} style={styles.commentImage} />
+                  <View className="mt-3 mb-3">
+                    <FilePreview fileId={comment.file_id} className="rounded-lg min-h-38 max-h-100" />
                   </View>
-                  <View style={styles.commentMetaWithFile}>
-                    <Text style={styles.commentAuthor}>{comment.author_name}</Text>
-                    <Text style={styles.commentDate}>
+                  <View className="flex-row justify-between items-center mt-3">
+                    <Text className="text-xs text-primary-500 font-medium">{comment.author_name}</Text>
+                    <Text className="text-xs text-gray-400">
                       {formatDate(comment.created_at)}
                     </Text>
                   </View>
@@ -328,7 +326,7 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTop
 
       {/* Floating Add Comment Button */}
       <TouchableOpacity
-        style={styles.fab}
+        className="absolute w-14 h-14 items-center justify-center right-5 bottom-5 bg-primary-500 rounded-full shadow-lg"
         onPress={() => setShowAddComment(true)}
         activeOpacity={0.8}
       >
@@ -342,7 +340,7 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTop
         presentationStyle="pageSheet"
         onRequestClose={() => setShowAddComment(false)}
       >
-        <View style={styles.modalContainer}>
+        <View className="flex-1 bg-gray-100">
           <CreateComment
             topicId={topicId}
             onCommentCreated={handleCommentCreated}
@@ -358,7 +356,7 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTop
         presentationStyle="pageSheet"
         onRequestClose={() => setIsEditingTopic(false)}
       >
-        <View style={styles.editTopicModal}>
+        <View className="flex-1 bg-gray-100">
           <CreateTopic
             initialTopic={topic}
             onTopicCreated={handleTopicEdited}
@@ -387,313 +385,3 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, onBack, onTop
     </>
   )
 }
-
-const styles = StyleSheet.create({
-  content: {
-    flex: 1,
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 10,
-    color: '#666',
-    fontSize: 16,
-  },
-  errorText: {
-    color: '#ff4757',
-    fontSize: 18,
-    marginBottom: 20,
-  },
-  topicHeader: {
-    marginBottom: 15,
-  },
-  backButton: {
-    paddingVertical: 5,
-    marginBottom: 15,
-  },
-  backButtonText: {
-    color: '#007AFF',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  topicContainer: {
-    backgroundColor: 'white',
-    padding: 20,
-    marginBottom: 20,
-  },
-  topicTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 8,
-  },
-  topicContent: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 10,
-    lineHeight: 20,
-  },
-  topicImageContainer: {
-    marginBottom: 10,
-  },
-  topicImage: {
-    borderRadius: 8,
-    minHeight: 150,
-    maxHeight: 400,
-  },
-  topicMeta: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  author: {
-    fontSize: 12,
-    color: '#007AFF',
-    fontWeight: '500',
-  },
-  date: {
-    fontSize: 12,
-    color: '#999',
-  },
-  commentsSection: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
-  },
-  commentsTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 15,
-  },
-  commentCard: {
-    backgroundColor: 'white',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 10,
-  },
-  commentContent: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
-    marginBottom: 10,
-  },
-  commentImageContainer: {
-    marginTop: 10,
-    marginBottom: 10,
-  },
-  commentImage: {
-    borderRadius: 8,
-    minHeight: 150,
-    maxHeight: 400,
-  },
-  commentMeta: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  commentMetaWithFile: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  commentAuthor: {
-    fontSize: 12,
-    color: '#007AFF',
-    fontWeight: '500',
-  },
-  commentDate: {
-    fontSize: 12,
-    color: '#999',
-  },
-  addCommentSection: {
-    backgroundColor: 'white',
-    padding: 20,
-    marginBottom: 20,
-  },
-  addCommentTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 15,
-  },
-  input: {
-    backgroundColor: '#f8f9fa',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    marginBottom: 15,
-    fontSize: 16,
-    color: '#333',
-  },
-  commentInput: {
-    height: 80,
-    paddingTop: 12,
-  },
-  submitButton: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  submitButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  fileSection: {
-    marginBottom: 15,
-  },
-  uploadButton: {
-    backgroundColor: '#f8f9fa',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 15,
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  uploadButtonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  uploadButtonText: {
-    color: '#007AFF',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  filePreview: {
-    backgroundColor: '#f8f9fa',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 10,
-    alignItems: 'center',
-  },
-  previewImage: {
-    width: '100%',
-    height: 150,
-    borderRadius: 6,
-    marginBottom: 10,
-  },
-  removeFileButton: {
-    backgroundColor: '#ff4757',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  removeFileText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  // Floating Action Button styles
-  fab: {
-    position: 'absolute',
-    width: 56,
-    height: 56,
-    alignItems: 'center',
-    justifyContent: 'center',
-    right: 20,
-    bottom: 20,
-    backgroundColor: '#007AFF',
-    borderRadius: 28,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
-    zIndex: 1000,
-  },
-  // Modal styles
-  modalContainer: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  modalCancelButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-  modalCancelText: {
-    color: '#007AFF',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  modalSubmitButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-  modalSubmitText: {
-    color: '#007AFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  modalContent: {
-    flex: 1,
-    padding: 20,
-  },
-  uploadIcon: {
-    marginRight: 8,
-  },
-  // Header styles
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  menuButton: {
-    padding: 8,
-    borderRadius: 6,
-    backgroundColor: '#f8f9fa',
-  },
-  actionButton: {
-    padding: 8,
-    borderRadius: 6,
-    backgroundColor: '#f8f9fa',
-  },
-  commentHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: 10,
-  },
-  commentContentContainer: {
-    flex: 1,
-  },
-  // Edit topic modal styles
-  editTopicModal: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-})
