@@ -174,7 +174,7 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
 
   if (loading) {
     return (
-      <View className="rounded-lg overflow-hidden bg-gray-100 max-w-full justify-center items-center" style={[{ height: 100 }, style]}>
+      <View className="rounded-lg overflow-hidden bg-gray-100 max-w-full justify-center items-center" style={[{ height: 256 }, style]}>
         <ActivityIndicator size="small" color="#007AFF" />
       </View>
     )
@@ -182,7 +182,7 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
 
   if (error || !publicUrl || (!file && !localUri)) {
     return (
-      <View className="rounded-lg overflow-hidden bg-red-50 max-w-full justify-center items-center p-2.5" style={[{ height: 100 }, style]}>
+      <View className="rounded-lg overflow-hidden bg-red-50 max-w-full justify-center items-center p-2.5" style={[{ height: 256 }, style]}>
         <Text className="text-red-600 text-xs">📎 Attachment unavailable</Text>
       </View>
     )
