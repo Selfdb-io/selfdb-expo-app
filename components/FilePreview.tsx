@@ -438,7 +438,7 @@ const styles = StyleSheet.create({
   videoContainer: {
     position: 'relative',
     width: '100%',
-    height: 350, // Fixed height for video container (same as image height for consistency)
+    height: 250, // Fixed height for video container (same as image height for consistency)
   },
   playButtonOverlay: {
     position: 'absolute',
