@@ -1,10 +1,6 @@
 import React, { useState } from 'react'
 import {
   View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
   Alert,
   ActivityIndicator,
   SafeAreaView,
@@ -12,6 +8,9 @@ import {
   Platform,
 } from 'react-native'
 import { useAuth } from '@/contexts/AuthContext'
+import { ThemedText } from '@/components/ThemedText'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
 
 interface RegisterScreenProps {
   onSwitchToLogin: () => void
@@ -58,132 +57,68 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView className="flex-1 bg-gray-100">
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
+        className="flex-1"
       >
-        <View style={styles.content}>
-          <Text style={styles.title}>Register</Text>
+        <View className="flex-1 justify-center px-5">
+          <ThemedText type="title" className="text-center mb-10">Register</ThemedText>
           
-          <View style={styles.form}>
-            <TextInput
-              style={styles.input}
+          <View className="mb-5">
+            <Input
               placeholder="Email"
-              placeholderTextColor="#666"
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
+              className="mb-4"
             />
             
-            <TextInput
-              style={styles.input}
+            <Input
               placeholder="Password"
-              placeholderTextColor="#666"
               value={password}
               onChangeText={setPassword}
               secureTextEntry
               autoCapitalize="none"
               textContentType="none"
               passwordRules=""
+              className="mb-4"
             />
             
-            <TextInput
-              style={styles.input}
+            <Input
               placeholder="Confirm Password"
-              placeholderTextColor="#666"
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               secureTextEntry
               autoCapitalize="none"
               textContentType="none"
               passwordRules=""
+              className="mb-4"
             />
             
-            <TouchableOpacity
-              style={[styles.button, loading && styles.buttonDisabled]}
-              onPress={handleSubmit}
-              disabled={loading}
-            >
-              {loading ? (
+            {loading ? (
+              <View className="bg-primary-500 rounded-lg py-4 items-center mt-2.5 opacity-60">
                 <ActivityIndicator color="white" />
-              ) : (
-                <Text style={styles.buttonText}>Register</Text>
-              )}
-            </TouchableOpacity>
+              </View>
+            ) : (
+              <Button
+                title="Register"
+                onPress={handleSubmit}
+                className="mt-2.5"
+              />
+            )}
           </View>
           
-          <TouchableOpacity
-            style={styles.switchButton}
+          <Button
+            title="Already have an account? Login here"
+            variant="ghost"
             onPress={onSwitchToLogin}
-          >
-            <Text style={styles.switchText}>
-              Already have an account? Login here
-            </Text>
-          </TouchableOpacity>
+            className="py-2.5"
+          />
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 40,
-    color: '#333',
-  },
-  form: {
-    marginBottom: 20,
-  },
-  input: {
-    backgroundColor: 'white',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    marginBottom: 15,
-    fontSize: 16,
-    color: '#333',
-  },
-  button: {
-    backgroundColor: '#007AFF',
-    borderRadius: 8,
-    paddingVertical: 15,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  switchButton: {
-    paddingVertical: 10,
-  },
-  switchText: {
-    color: '#007AFF',
-    textAlign: 'center',
-    fontSize: 14,
-  },
-})

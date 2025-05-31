@@ -3,7 +3,6 @@ import {
   Modal,
   View,
   TouchableOpacity,
-  StyleSheet,
   Text,
 } from 'react-native'
 import { LoginScreen } from './LoginScreen'
@@ -33,10 +32,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Text style={styles.closeButtonText}>✕</Text>
+      <View className="flex-1 bg-gray-100">
+        <View className="flex-row justify-end px-5 pt-5 pb-2.5">
+          <TouchableOpacity 
+            className="w-10 h-10 rounded-full bg-gray-300 justify-center items-center" 
+            onPress={onClose}
+          >
+            <Text className="text-lg text-gray-600 font-bold">✕</Text>
           </TouchableOpacity>
         </View>
         
@@ -55,30 +57,3 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     </Modal>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 10,
-  },
-  closeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#ddd',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  closeButtonText: {
-    fontSize: 18,
-    color: '#666',
-    fontWeight: 'bold',
-  },
-})
