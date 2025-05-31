@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, TouchableOpacity, Text } from 'react-native';
+import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -32,8 +31,8 @@ export default function HomeScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <ThemedView style={styles.centered}>
+      <SafeAreaView className="flex-1 bg-gray-100">
+        <ThemedView className="flex-1 justify-center items-center">
           <ThemedText>Loading...</ThemedText>
         </ThemedView>
       </SafeAreaView>
@@ -42,7 +41,7 @@ export default function HomeScreen() {
 
   if (showCreateTopic) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView className="flex-1 bg-gray-100">
         <CreateTopic
           onTopicCreated={handleTopicCreated}
           onCancel={() => setShowCreateTopic(false)}
@@ -52,8 +51,8 @@ export default function HomeScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
+    <SafeAreaView className="flex-1 bg-gray-100">
+      <View className="flex-1">
         <TopicsList 
           onCreateTopic={() => setShowCreateTopic(true)} 
           showHeader={true}
@@ -71,18 +70,3 @@ export default function HomeScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  content: {
-    flex: 1,
-  },
-});

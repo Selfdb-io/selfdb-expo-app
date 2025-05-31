@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   Alert,
   ActivityIndicator,
   SafeAreaView,
@@ -46,17 +45,17 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView className="flex-1 bg-gray-100">
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
+        className="flex-1"
       >
-        <View style={styles.content}>
-          <Text style={styles.title}>Login</Text>
+        <View className="flex-1 justify-center px-5">
+          <Text className="text-3xl font-bold text-center mb-10 text-gray-800">Login</Text>
           
-          <View style={styles.form}>
+          <View className="mb-5">
             <TextInput
-              style={styles.input}
+              className="bg-white border border-gray-300 rounded-lg px-4 py-3 mb-4 text-base text-gray-800"
               placeholder="Email"
               placeholderTextColor="#666"
               value={email}
@@ -67,7 +66,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
             />
             
             <TextInput
-              style={styles.input}
+              className="bg-white border border-gray-300 rounded-lg px-4 py-3 mb-4 text-base text-gray-800"
               placeholder="Password"
               placeholderTextColor="#666"
               value={password}
@@ -79,24 +78,24 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
             />
             
             <TouchableOpacity
-              style={[styles.button, loading && styles.buttonDisabled]}
+              className={`bg-primary-500 rounded-lg py-4 items-center mt-2.5 ${loading ? 'opacity-60' : ''}`}
               onPress={handleSubmit}
               disabled={loading}
             >
               {loading ? (
                 <ActivityIndicator color="white" />
               ) : (
-                <Text style={styles.buttonText}>Login</Text>
+                <Text className="text-white text-base font-semibold">Login</Text>
               )}
             </TouchableOpacity>
           </View>
           
           <TouchableOpacity
-            style={styles.switchButton}
+            className="py-2.5"
             onPress={onSwitchToRegister}
           >
-            <Text style={styles.switchText}>
-              Don't have an account? Register here
+            <Text className="text-primary-500 text-center text-sm">
+              Don&apos;t have an account? Register here
             </Text>
           </TouchableOpacity>
         </View>
@@ -104,62 +103,3 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
     </SafeAreaView>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 40,
-    color: '#333',
-  },
-  form: {
-    marginBottom: 20,
-  },
-  input: {
-    backgroundColor: 'white',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    marginBottom: 15,
-    fontSize: 16,
-    color: '#333',
-  },
-  button: {
-    backgroundColor: '#007AFF',
-    borderRadius: 8,
-    paddingVertical: 15,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  switchButton: {
-    paddingVertical: 10,
-  },
-  switchText: {
-    color: '#007AFF',
-    textAlign: 'center',
-    fontSize: 14,
-  },
-})
