@@ -491,7 +491,7 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     maxWidth: '100%',
     // You might want to define a minHeight for placeholders to avoid them collapsing too much
-    minHeight: 150, 
+    minHeight: 250, 
   },
   mediaIcon: {
     fontSize: 32,
