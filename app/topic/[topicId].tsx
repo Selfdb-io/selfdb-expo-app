@@ -92,13 +92,8 @@ export default function TopicDetailScreen() {
   }
 
   const handleBack = () => {
-    if (router.canGoBack()) {
-      router.back();
-    } else {
-      // Fallback if cannot go back (e.g., deep link directly to this screen)
-      // You might want to navigate to a specific screen like the topics list or home
-      router.replace('/'); // Example: navigate to home or main topics list
-    }
+    // Always navigate to the topics list (index screen) to ensure consistent navigation
+    router.replace('/');
   };
 
   return (

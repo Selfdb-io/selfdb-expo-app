@@ -45,7 +45,7 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, topic, onBack
     <View className="flex-row justify-between items-center px-5 pb-2 border-b border-gray-200">
       <TouchableOpacity 
         className="p-2 rounded-full justify-center items-center w-10 h-10"
-        onPress={() => onBack ? onBack() : router.back()}
+         onPress={() => onBack ? onBack() : router.replace('/')}
       >
         <Ionicons name="arrow-back" size={20} color="#007AFF" />
       </TouchableOpacity>

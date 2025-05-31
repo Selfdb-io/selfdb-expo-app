@@ -311,7 +311,7 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
       } else if (onCancel) {
         onCancel()
       } else {
-        router.back()
+           router.replace('/')
       }
     } catch (error) {
       console.error('Failed to delete topic:', error)
