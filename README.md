@@ -1,50 +1,91 @@
-# Welcome to your Expo app 👋
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+# SelfDB Expo Integration
 
-## Get started
+This Expo React Native project has been successfully integrated with SelfDB SDK. Here's what has been set up:
 
-1. Install dependencies
+## Features Implemented
 
+### 🔐 Authentication
+- **AuthContext**: Complete authentication provider with React Context
+- **Login/Register Screens**: Native mobile forms with proper keyboard handling
+- **Auth Modal**: Modal component for login/register flows
+- **Persistent Auth**: Automatic auth state restoration on app restart
+
+### 📱 UI Components
+- **TopicsList**: Display topics with pull-to-refresh
+- **CreateTopic**: Form to create new topics with file upload support
+- **TopicDetail**: View individual topics and comments
+- **Auth Screens**: Native login and registration forms
+
+### 🗄️ Database Integration
+- **SelfDB Client**: Configured with environment variables
+- **CRUD Operations**: Create, read topics and comments
+- **Real-time Support**: Ready for real-time updates
+
+### 🏗️ Project Structure
+```
+services/
+  selfdb.ts          # SelfDB client configuration
+contexts/
+  AuthContext.tsx    # Authentication state management
+components/
+  auth/             # Authentication components
+    AuthModal.tsx
+    LoginScreen.tsx
+    RegisterScreen.tsx
+  topics/           # Topic-related components
+    TopicsList.tsx
+    CreateTopic.tsx
+types/
+  index.ts          # TypeScript definitions
+lib/
+  utils.ts          # Utility functions
+```
+
+## Environment Setup
+
+The `.env` file contains your SelfDB configuration:
+```
+EXPO_PUBLIC_SELFDB_URL=https://api.selfdb.io
+EXPO_PUBLIC_SELFDB_STORAGE_URL=https://storage.selfdb.io
+EXPO_PUBLIC_SELFDB_ANON_KEY=your_key_here
+```
+
+## Key Differences from Vite React
+
+1. **Environment Variables**: Uses `EXPO_PUBLIC_` prefix instead of `VITE_`
+2. **Navigation**: Uses Expo Router instead of React Router
+3. **Styling**: React Native StyleSheet instead of CSS
+4. **Components**: Native components (View, Text, TouchableOpacity) instead of HTML
+5. **File Uploads**: Ready for React Native image picker integration
+
+## Getting Started
+
+1. **Install dependencies** (already done):
    ```bash
    npm install
    ```
 
-2. Start the app
-
+2. **Start the development server**:
    ```bash
    npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+3. **Test the app**:
+   - Open in Expo Go app on your phone
+   - Or run on iOS/Android emulator
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Next Steps
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+To fully test the integration, you'll need to:
 
-## Get a fresh project
+1. Set up your SelfDB backend with the proper tables:
+   - `topics` table
+   - `comments` table
+   - User authentication
 
-When you're ready, run:
+2. Update the `.env` file with your actual SelfDB credentials
 
-```bash
-npm run reset-project
-```
+3. Test the authentication flow and data operations
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+The codebase is now ready and follows React Native best practices while maintaining the same functionality as the original Vite React implementation.
