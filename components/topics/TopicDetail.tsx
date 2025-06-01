@@ -19,6 +19,7 @@ import { CreateComment } from './CreateComment'
 import { CreateTopic } from './CreateTopic'
 import { CommentActions } from './CommentActions'
 import { canModifyContent } from '@/lib/permissions'
+import { TopicCard } from './TopicCard'   // ⬅️ new import
 
 interface TopicDetailProps {
   topicId: string
@@ -274,24 +275,11 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, topic, onBack
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         {/* Topic Content Area */}
         <View className="px-4 pt-4 pb-0">
-          <View className="bg-white rounded-lg p-4 mb-4 shadow-sm">
-            <Text className="text font-semibold text-gray-800 mb-1">{currentTopic.title}</Text>
-            <Text className="text-sm text-gray-600 mb-3 leading-5">{currentTopic.content}</Text>
-            {currentTopic.file_id && (
-              <View className="mb-3">
-                <FilePreview fileId={currentTopic.file_id}/>
-              </View>
-            )}
-            <View className="flex-row justify-between items-center mb-1">
-              <Text className="text-xs text-primary-500 font-medium">By {currentTopic.author_name}</Text>
-              <Text className="text-xs text-gray-400">{formatDate(currentTopic.created_at)}</Text>
-            </View>
-            {comments.length > 0 && (
-              <Text className="text-xs text-gray-600 italic">
-                {comments.length} comment{comments.length !== 1 ? 's' : ''}
-              </Text>
-            )}
-          </View>
+          {/* Topic card */}
+          <TopicCard
+            topic={currentTopic}
+            commentsCount={comments.length}
+          />
         </View>
 
         {/* Comments */}

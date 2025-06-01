@@ -11,11 +11,9 @@ import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
 import { db, realtime } from '@/services/selfdb'
 import { Topic } from '@/types'
-import { formatDate } from '@/lib/utils'
 import { FilePreview, preloadFileMetadata } from '../FilePreview'
-import { ThemedText } from '@/components/ThemedText'
-import { ThemedView } from '@/components/ThemedView'
 import SvgComponent from '@/assets/images/logo'
+import { TopicCard } from './TopicCard'
 
 interface TopicsListProps {
   onCreateTopic?: () => void
@@ -39,20 +37,42 @@ export const TopicsList: React.FC<TopicsListProps> = ({
   const [refreshing, setRefreshing] = useState(false)
   const [visibleTopics, setVisibleTopics] = useState<Set<string>>(new Set())
 
+  // Move declaration up so it’s visible in cleanup
+  let topicsSubscription: any = null
+  let commentsSubscription: any = null
+
   const loadTopics = async () => {
     try {
       console.log('Loading topics...')
-      // Fetch topics ordered by newest first
+      
+      // 1) fetch all topics
       const topicsData = await db
         .from('topics')
         .select('*')
         .order('created_at', 'desc')
         .execute()
-      console.log('Topics loaded:', topicsData.length)
-      setTopics(topicsData as unknown as Topic[])
+
+      // 2) For each topic, fetch its comment count using the exact same method as TopicDetail
+      const topicsWithCounts = await Promise.all(
+        (topicsData as any[]).map(async (topic) => {
+          // Load comments for this topic using proper query builder API (same as TopicDetail)
+          const commentsData = await db
+            .from('comments')
+            .where('topic_id', topic.id)
+            .order('created_at', 'asc')
+            .execute()
+          
+          return {
+            ...topic,
+            comment_count: (commentsData as any[]).length
+          }
+        })
+      )
+
+      setTopics(topicsWithCounts as Topic[])
       
       // Preload file metadata for all topics with files
-      const preloadPromises = topicsData
+      const preloadPromises = topicsWithCounts
         .filter((topic: any) => topic.file_id)
         .map((topic: any) => preloadFileMetadata(topic.file_id))
       
@@ -66,7 +86,7 @@ export const TopicsList: React.FC<TopicsListProps> = ({
       
       // Add 100ms delay to ensure media loads with text content, then hide loading
       setTimeout(() => {
-        const topicIds = new Set(topicsData.map((topic: any) => topic.id.toString()))
+        const topicIds = new Set(topicsWithCounts.map((topic: any) => topic.id.toString()))
         setVisibleTopics(topicIds)
         setLoading(false)
         setRefreshing(false)
@@ -81,16 +101,12 @@ export const TopicsList: React.FC<TopicsListProps> = ({
   useEffect(() => {
     loadTopics()
 
-    // Store subscription references
-    let topicsSubscription: any = null
-
-    // Set up realtime subscription for topics
     const setupRealtime = async () => {
       try {
         await realtime.connect()
         
         // Subscribe to topics changes
-        topicsSubscription = realtime.subscribe('topics', (payload: any) => {
+        topicsSubscription = realtime.subscribe('topics', async (payload: any) => {
           console.log('Topics realtime update:', payload)
           
           // Handle different types of realtime events
@@ -109,7 +125,10 @@ export const TopicsList: React.FC<TopicsListProps> = ({
             })
           } else if (payload.eventType === 'INSERT') {
             // Add new topic to the beginning of the list
-            const newTopic = payload.new as Topic
+            const newTopic = {
+              ...(payload.new as Topic),
+              comment_count: 0,          // new topics start with zero comments
+            }
             console.log('Adding new topic:', newTopic.id)
             
             setTopics(currentTopics => [newTopic, ...currentTopics])
@@ -119,13 +138,23 @@ export const TopicsList: React.FC<TopicsListProps> = ({
               return newVisible
             })
           } else if (payload.eventType === 'UPDATE') {
-            // Update existing topic
+            // Update existing topic and refetch comment count
             const updatedTopic = payload.new as Topic
             console.log('Updating topic:', updatedTopic.id)
             
+            // Fetch comments for this specific topic to get accurate count
+            const topicComments = await db
+              .from('comments')
+              .where('topic_id', updatedTopic.id)
+              .execute()
+            
+            const commentCount = (topicComments as any[]).length
+            
             setTopics(currentTopics => 
               currentTopics.map(topic => 
-                topic.id.toString() === updatedTopic.id.toString() ? updatedTopic : topic
+                topic.id.toString() === updatedTopic.id.toString()
+                  ? { ...updatedTopic, comment_count: commentCount }
+                  : topic
               )
             )
           } else {
@@ -135,10 +164,35 @@ export const TopicsList: React.FC<TopicsListProps> = ({
           }
         })
         
+        // keep comment_count up-to-date
+        commentsSubscription = realtime.subscribe('comments', (payload: any) => {
+          if (payload.eventType === 'INSERT') {
+            const topicId = payload.new.topic_id.toString()
+            setTopics(t =>
+              t.map(tp =>
+                tp.id.toString() === topicId
+                  ? { ...tp, comment_count: (tp.comment_count ?? 0) + 1 }
+                  : tp
+              )
+            )
+          } else if (payload.eventType === 'DELETE') {
+            const topicId = payload.old.topic_id.toString()
+            setTopics(t =>
+              t.map(tp =>
+                tp.id.toString() === topicId
+                  ? {
+                      ...tp,
+                      comment_count: Math.max((tp.comment_count ?? 1) - 1, 0),
+                    }
+                  : tp
+              )
+            )
+          }
+        })
+
         console.log('✅ Realtime subscription established for topics')
       } catch (error) {
         console.warn('Realtime features disabled for topics:', error)
-        // Realtime is optional, continue without it
       }
     }
 
@@ -146,11 +200,8 @@ export const TopicsList: React.FC<TopicsListProps> = ({
 
     return () => {
       try {
-        // Unsubscribe from topics if subscription exists
-        if (topicsSubscription && typeof topicsSubscription.unsubscribe === 'function') {
-          topicsSubscription.unsubscribe()
-        }
-        // Note: We don't disconnect realtime here as TopicDetail might be using it
+        if (topicsSubscription?.unsubscribe) topicsSubscription.unsubscribe()
+        if (commentsSubscription?.unsubscribe) commentsSubscription.unsubscribe()   // ← no TS error
       } catch (error) {
         console.warn('Error cleaning up realtime subscriptions:', error)
       }
@@ -159,6 +210,7 @@ export const TopicsList: React.FC<TopicsListProps> = ({
 
   const handleRefresh = () => {
     setRefreshing(true)
+    // loadTopics() will fetch fresh topics AND count comments properly
     loadTopics()
   }
 
@@ -174,7 +226,7 @@ export const TopicsList: React.FC<TopicsListProps> = ({
 
   const renderTopic = ({ item }: { item: Topic }) => {
     const isVisible = visibleTopics.has(item.id.toString())
-    
+
     if (!isVisible) {
       // Show loading skeleton while waiting for content to be synchronized
       return (
@@ -190,34 +242,14 @@ export const TopicsList: React.FC<TopicsListProps> = ({
         </View>
       )
     }
-    
+
     return (
-      <TouchableOpacity
-        className="bg-white rounded-lg p-4 mb-4 shadow-sm"
+      <TopicCard
+        topic={item}
+        commentsCount={item.comment_count}
+        contentNumberOfLines={2}
         onPress={() => handleTopicPress(item)}
-      >
-        <Text className="text font-semibold text-gray-800 mb-1">{item.title}</Text>
-        <Text className="text-sm text-gray-600 mb-3 leading-5" numberOfLines={2}>
-          {item.content}
-        </Text>
-        {item.file_id && (
-          <View className="mb-3">
-            <FilePreview 
-              key={`topic-${item.id}-${item.file_id}`} 
-              fileId={item.file_id} 
-            />
-          </View>
-        )}
-        <View className="flex-row justify-between items-center mb-1">
-          <Text className="text-xs text-primary-500 font-medium">By {item.author_name}</Text>
-          <Text className="text-xs text-gray-400">{formatDate(item.created_at)}</Text>
-        </View>
-        {item.comment_count !== undefined && (
-          <Text className="text-xs text-gray-600 italic">
-            {item.comment_count} comment{item.comment_count !== 1 ? 's' : ''}
-          </Text>
-        )}
-      </TouchableOpacity>
+      />
     )
   }
 
