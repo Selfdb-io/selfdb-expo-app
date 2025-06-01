@@ -43,9 +43,9 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, topic, onBack
   // Header component - render directly without memoization to prevent delays
   const HeaderComponent = (
     <View className="flex-row justify-between items-center px-5 pb-2 border-b border-gray-200">
-      <TouchableOpacity 
+      <TouchableOpacity
         className="p-2 rounded-full justify-center items-center w-10 h-10"
-         onPress={() => onBack ? onBack() : router.replace('/')}
+        onPress={() => router.canGoBack() ? router.back() : router.replace('/')}
       >
         <Ionicons name="arrow-back" size={20} color="#007AFF" />
       </TouchableOpacity>
@@ -242,13 +242,23 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, topic, onBack
     setComments(comments.filter(comment => comment.id.toString() !== commentId))
   }
 
+  const handleBack = () => {
+    // Use router.back() to ensure proper back navigation
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      // Only use replace as a fallback if we can't go back
+      router.replace('/');
+    }
+  };
+
   if (!currentTopic) {
     return (
       <View className="flex-1 justify-center items-center">
         <Text className="text-red-500 text-lg mb-5">Topic not found</Text>
         <TouchableOpacity
           className="bg-primary-500 py-3 px-6 rounded-lg"
-          onPress={() => onBack ? onBack() : router.back()}
+          onPress={() => router.canGoBack() ? router.back() : router.replace('/')}
         >
           <Text className="text-white text-base font-medium">Go Back</Text>
         </TouchableOpacity>
