@@ -17,7 +17,7 @@ import { formatDate } from '@/lib/utils'
 import { FilePreview, preloadFileMetadata } from '../FilePreview'
 import { CreateComment } from './CreateComment'
 import { CreateTopic } from './CreateTopic'
-import { CommentActions } from './CommentActions'
+import { CommentCard } from './CommentCard'                  // added
 import { canModifyContent } from '@/lib/permissions'
 import { TopicCard } from './TopicCard'   // ⬅️ new import
 
@@ -287,47 +287,20 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, topic, onBack
           <Text className="text font-semibold text-gray-800 mb-1">
             Comments ({comments.length})
           </Text>
-          
+
           {commentsLoading ? (
             <View className="flex-row justify-center items-center py-8">
               <ActivityIndicator size="small" color="#007AFF" />
               <Text className="ml-2 text-gray-600">Loading comments...</Text>
             </View>
           ) : (
-            comments.map((comment) => (
-              <View key={comment.id} className="bg-white p-4 rounded-lg mb-3">
-                <View className="flex-row justify-between items-start gap-3">
-                  <View className="flex-1">
-                    <Text className="text-sm text-gray-600 leading-5 mb-3">{comment.content}</Text>
-                    {!comment.file_id && (
-                      <View className="flex-row justify-between items-center">
-                        <Text className="text-xs text-primary-500 font-medium">{comment.author_name}</Text>
-                        <Text className="text-xs text-gray-400">
-                          {formatDate(comment.created_at)}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                  <CommentActions
-                    comment={comment}
-                    onCommentUpdated={handleCommentUpdated}
-                    onCommentDeleted={handleCommentDeleted}
-                  />
-                </View>
-                {comment.file_id && (
-                  <>
-                    <View className="mt-3 mb-3">
-                      <FilePreview fileId={comment.file_id}/>
-                    </View>
-                    <View className="flex-row justify-between items-center mt-3">
-                      <Text className="text-xs text-primary-500 font-medium">{comment.author_name}</Text>
-                      <Text className="text-xs text-gray-400">
-                        {formatDate(comment.created_at)}
-                      </Text>
-                    </View>
-                  </>
-                )}
-              </View>
+            comments.map(comment => (
+              <CommentCard
+                key={comment.id}
+                comment={comment}
+                onCommentUpdated={handleCommentUpdated}
+                onCommentDeleted={handleCommentDeleted}
+              />
             ))
           )}
         </View>
