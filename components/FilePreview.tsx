@@ -6,12 +6,12 @@ import {
   ActivityIndicator,
   Modal,
   StatusBar,
-  StyleSheet,
-  Platform, // For platform-specific adjustments if needed
-} from 'react-native';
+  StyleSheet,               // 🆕 bring StyleSheet back
+} from 'react-native';           // ⬅️ removed StyleSheet & Platform
 import { Image, ImageErrorEventData } from 'expo-image'; // Added ImageErrorEventData
 import Video, { OnLoadData, OnProgressData, OnSeekData, VideoRef } from 'react-native-video';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context'; // 🆕
 // Assuming these are your actual paths and types
 import { storage } from '@/services/selfdb';
 import { FileMetadata, MediaType } from '@/types';
@@ -92,6 +92,7 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
   style,
   onPress
 }) => {
+  const insets = useSafeAreaInsets();                               // 🆕
   const [file, setFile] = useState<FileMetadata | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -106,6 +107,9 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
   const [isBuffering, setIsBuffering] = useState(false); // For showing loader during buffer
 
   const videoPlayerRef = useRef<VideoRef>(null); // Typed VideoRef for better control
+
+  // New state for image fullscreen
+  const [isImageFullscreen, setIsImageFullscreen] = useState(false);
 
   useEffect(() => {
     // Validate that only one of fileId or localUri is provided
@@ -270,6 +274,9 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
     // When exiting, it will re-render and use the isVideoPlaying state
   };
 
+  const closeImageFullscreen = () => setIsImageFullscreen(false);   // 🆕 always close
+  const toggleImageFullscreen = () => setIsImageFullscreen(v => !v);
+
   const getMediaType = () => {
     return isLocalFile
       ? getMediaTypeFromUrl(localUri || '')
@@ -279,7 +286,7 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
   // --- Rendering Logic ---
   if (loading) {
     return (
-      <View style={[styles.centeredBox, styles.fixedHeightContainer, styles.loadingBox, style]}>
+      <View className="h-64 w-full justify-center items-center overflow-hidden bg-gray-100" style={style}>
         <ActivityIndicator size="small" color="#007AFF" />
       </View>
     );
@@ -287,10 +294,10 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
 
   if (error || !publicUrl || (!file && !isLocalFile)) {
     return (
-      <View style={[styles.centeredBox, styles.fixedHeightContainer, styles.errorBox, style]}>
+      <View className="h-64 w-full justify-center items-center overflow-hidden bg-red-50 p-2" style={style}>
         <Ionicons name="alert-circle-outline" size={24} color="#dc2626" />
-        <Text style={styles.errorText}>Attachment unavailable</Text>
-        {error && <Text style={[styles.errorText, styles.errorDetailText]}>{error}</Text>}
+        <Text className="text-red-600 text-sm mt-2">Attachment unavailable</Text>
+        {error && <Text className="text-red-700 text-[10px] mt-1">{error}</Text>}
       </View>
     );
   }
@@ -304,7 +311,7 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
       <Video
         ref={videoPlayerRef}
         source={{ uri: publicUrl }}
-        style={isFS ? styles.fullscreenVideoPlayer : styles.inlineVideoPlayer}
+        style={{ width: '100%', height: '100%' }}          // ✅ StyleProp<ViewStyle>
         controls={false} // We use custom controls
         resizeMode={isFS ? "contain" : "cover"}
         paused={!isVideoPlaying}
@@ -332,25 +339,32 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
       <>
         {/* Inline Player */}
         {!isFullscreen && (
-          <View style={[styles.mediaContainer, styles.fixedHeightContainer, style]}>
+          <View className={`h-64 w-full rounded-lg overflow-hidden bg-gray-200 relative ${style ? '' : ''}`}>
             {renderVideoPlayerComponent(false)}
             {/* Inline Controls Overlay */}
-            <View style={styles.controlsOverlay}>
-              {(isBuffering && !isVideoPlaying) && ( // Show loader if buffering and not explicitly playing
+            <View className="absolute inset-0 justify-center items-center z-10">
+              {(isBuffering && !isVideoPlaying) && (
                 <ActivityIndicator size="large" color="rgba(255,255,255,0.8)" />
               )}
               {!isVideoPlaying && !isBuffering && (
-                <TouchableOpacity style={styles.playButtonContainer} onPress={togglePlayPause} activeOpacity={0.8}>
-                  <View style={styles.playButton}>
-                    <Ionicons name="play" size={28} color="white" style={styles.playIcon} />
+                <TouchableOpacity
+                  className="absolute inset-0 justify-center items-center bg-black/30"
+                  onPress={togglePlayPause}
+                  activeOpacity={0.8}
+                >
+                  <View className="bg-black/70 rounded-full w-16 h-16 justify-center items-center border-2 border-white">
+                    <Ionicons name="play" size={28} color="white" />
                   </View>
                 </TouchableOpacity>
               )}
               {isVideoPlaying && (
                 <>
-                  {/* Clickable overlay to pause */}
-                  <TouchableOpacity style={StyleSheet.absoluteFill} onPress={togglePlayPause} activeOpacity={1} />
-                  <TouchableOpacity style={styles.fullscreenButton} onPress={toggleFullscreen} activeOpacity={0.8}>
+                  <TouchableOpacity className="absolute inset-0" onPress={togglePlayPause} activeOpacity={1} />
+                  <TouchableOpacity
+                    className="absolute top-2.5 right-2.5 bg-black/70 rounded-full w-10 h-10 justify-center items-center"
+                    onPress={toggleFullscreen}
+                    activeOpacity={0.8}
+                  >
                     <Ionicons name="expand" size={20} color="white" />
                   </TouchableOpacity>
                 </>
@@ -363,30 +377,52 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
         <Modal
           visible={isFullscreen}
           animationType="slide"
-          supportedOrientations={['portrait', 'landscape']} // Allow orientation changes
-          onRequestClose={toggleFullscreen} // For Android back button
+          supportedOrientations={['portrait', 'landscape']}
+          onRequestClose={toggleFullscreen}
         >
-          <View style={styles.fullscreenContainer}>
+          <View className="flex-1 bg-black justify-center items-center">
             {renderVideoPlayerComponent(true)}
-            {/* Fullscreen Controls Overlay */}
-            <View style={styles.controlsOverlay}>
+
+            {/* Controls overlay (play / loader) */}
+            <View
+              pointerEvents="box-none"
+              className="absolute inset-0 justify-center items-center"
+            >
               {(isBuffering && !isVideoPlaying) && (
                 <ActivityIndicator size="large" color="rgba(255,255,255,0.8)" />
               )}
-              <TouchableOpacity style={styles.closeButton} onPress={toggleFullscreen} activeOpacity={0.8}>
-                <Ionicons name="close" size={28} color="white" />
-              </TouchableOpacity>
+
+              {/* Large play button */}
               {!isVideoPlaying && !isBuffering && (
-                <TouchableOpacity style={styles.playButtonContainer} onPress={togglePlayPause} activeOpacity={0.8}>
-                  <View style={styles.fullscreenPlayButton}>
-                    <Ionicons name="play" size={40} color="white" style={styles.playIcon} />
+                <TouchableOpacity
+                  className="absolute inset-0 justify-center items-center"
+                  onPress={togglePlayPause}
+                  activeOpacity={0.8}
+                >
+                  <View className="bg-black/80 rounded-full w-24 h-24 justify-center items-center border-2 border-white">
+                    <Ionicons name="play" size={40} color="white" />
                   </View>
                 </TouchableOpacity>
               )}
-               {isVideoPlaying && (
-                 <TouchableOpacity style={StyleSheet.absoluteFill} onPress={togglePlayPause} activeOpacity={1} />
+
+              {/* Pause overlay */}
+              {isVideoPlaying && (
+                <TouchableOpacity
+                  className="absolute inset-0"
+                  onPress={togglePlayPause}
+                  activeOpacity={1}
+                />
               )}
             </View>
+
+            {/* ➜ CLOSE BUTTON – rendered last so it’s always on top */}
+            <TouchableOpacity
+              className="absolute top-4 right-4 z-50 bg-black/70 rounded-full w-12 h-12 justify-center items-center"
+              onPress={toggleFullscreen}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="close" size={28} color="white" />
+            </TouchableOpacity>
           </View>
         </Modal>
       </>
@@ -399,188 +435,113 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
     switch (resolvedMediaType) {
       case 'image':
         return (
-          <Image
-            source={{ uri: publicUrl! }}
-            style={styles.imageStyle}
-            contentFit="cover" // Or "contain" depending on desired behavior
-            cachePolicy="memory-disk" // From your original code
-            recyclingKey={fileId || publicUrl!} // From your original code
-            onError={(e: ImageErrorEventData) => console.error("Image load error:", e.error)}
-          />
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={toggleImageFullscreen}
+            style={{ flex: 1 }}                          // 🟢 style instead of className
+          >
+            <Image
+              source={{ uri: publicUrl! }}
+              style={{ width: '100%', height: '100%' }}  // 🟢 width / height defined
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              recyclingKey={fileId || publicUrl!}
+              onError={(e: ImageErrorEventData) =>
+                console.error('Image load error:', e.error)
+              }
+            />
+          </TouchableOpacity>
         );
       case 'audio':
         return (
-          <View style={[styles.centeredBox, styles.placeholderBox, styles.fixedHeightContainer]}>
+          <View className="h-64 w-full justify-center items-center bg-gray-100 border border-gray-300 border-dashed p-5">
             <Ionicons name="musical-notes-outline" size={48} color="#4b5563" />
-            <Text style={styles.placeholderText}>Audio</Text>
-            <Text style={styles.placeholderFilename} numberOfLines={1}>{filename}</Text>
+            <Text className="text-base font-medium text-gray-600 mt-3 mb-1">Audio</Text>
+            <Text className="text-xs text-gray-500 text-center max-w-[90%] px-2" numberOfLines={1}>{filename}</Text>
           </View>
         );
       case 'pdf':
         return (
-          <View style={[styles.centeredBox, styles.placeholderBox, styles.fixedHeightContainer]}>
+          <View className="h-64 w-full justify-center items-center bg-gray-100 border border-gray-300 border-dashed p-5">
             <Ionicons name="document-text-outline" size={48} color="#4b5563" />
-            <Text style={styles.placeholderText}>PDF Document</Text>
-            <Text style={styles.placeholderFilename} numberOfLines={1}>{filename}</Text>
+            <Text className="text-base font-medium text-gray-600 mt-3 mb-1">PDF Document</Text>
+            <Text className="text-xs text-gray-500 text-center max-w-[90%] px-2" numberOfLines={1}>{filename}</Text>
           </View>
         );
-      default: // 'other'
+      default:
         return (
-          <View style={[styles.centeredBox, styles.placeholderBox, styles.fixedHeightContainer]}>
+          <View className="h-64 w-full justify-center items-center bg-gray-100 border border-gray-300 border-dashed p-5">
             <Ionicons name="document-attach-outline" size={48} color="#4b5563" />
-            <Text style={styles.placeholderText}>File Attachment</Text>
-            <Text style={styles.placeholderFilename} numberOfLines={1}>{filename}</Text>
+            <Text className="text-base font-medium text-gray-600 mt-3 mb-1">File Attachment</Text>
+            <Text className="text-xs text-gray-500 text-center max-w-[90%] px-2" numberOfLines={1}>{filename}</Text>
           </View>
         );
     }
   };
 
   return (
-    <ContainerComponent style={[styles.mediaContainer, styles.fixedHeightContainer, style]} onPress={onPress}>
+    <ContainerComponent
+      className="h-64 w-full rounded-lg overflow-hidden bg-gray-200"
+      style={style}
+      onPress={onPress}
+    >
       {renderNonVideoContent()}
+
+      {/* Full-screen IMAGE MODAL */}
+      {
+        resolvedMediaType === 'image' && (
+          <Modal
+            visible={isImageFullscreen}
+            animationType="fade"
+            onRequestClose={closeImageFullscreen}          // ✅ use close helper
+            supportedOrientations={['portrait', 'landscape']}
+            statusBarTranslucent
+            transparent={false}
+          >
+            {/* Root container – allow children to handle touches */}
+            <View pointerEvents="box-none" className="flex-1 bg-black">
+              {/* Image itself (does NOT block touches) */}
+              <Image
+                pointerEvents="none"
+                source={{ uri: publicUrl! }}
+                style={{ flex: 1 }}
+                contentFit="contain"
+                recyclingKey={fileId || publicUrl!}
+              />
+
+              {/* Tap-anywhere overlay ‑ captures close taps only */}
+              <TouchableOpacity
+                style={styles.imageOverlay}             // 🆕 use StyleSheet
+                onPress={closeImageFullscreen}
+                activeOpacity={1}
+              />
+
+              {/* Close button – highest z-order with safe-area offset */}
+              <TouchableOpacity
+                onPress={closeImageFullscreen}
+                activeOpacity={0.8}
+                className="absolute right-4 bg-black/70 rounded-full w-12 h-12 justify-center items-center"
+                style={[                                            // 🆕 array style to merge safely
+                  { top: insets.top + 4, elevation: 40 },           //    4px extra padding
+                ]}
+              >
+                <Ionicons name="close" size={28} color="white" />
+              </TouchableOpacity>
+            </View>
+          </Modal>
+        )
+      }
     </ContainerComponent>
   );
 };
 
-// --- Styles ---
-// These styles aim to replicate common UI patterns and your Tailwind-like class names.
-// Adjust them to fit your application's theme.
 const styles = StyleSheet.create({
-  fixedHeightContainer: {
-    height: 256, // Default height from your original code
-  },
-  centeredBox: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    overflow: 'hidden',
-    width: '100%', // Max width
-  },
-  loadingBox: {
-    backgroundColor: '#f3f4f6', // gray-100
-  },
-  errorBox: {
-    backgroundColor: '#fef2f2', // red-50
-    padding: 10,
-  },
-  errorText: {
-    color: '#dc2626', // red-600
-    fontSize: 14,
-    textAlign: 'center',
-    marginTop: 8,
-  },
-  errorDetailText: {
-    fontSize: 10,
-    color: '#b91c1c', // red-700
-    marginTop: 4,
-  },
-  mediaContainer: {
-    borderRadius: 8, // rounded-lg
-    overflow: 'hidden',
-    backgroundColor: '#e5e7eb', // gray-200 (slightly darker for container)
-    width: '100%', // max-w-full
-    position: 'relative', // For absolute positioning of controls
-  },
-  // Video Player Styles
-  inlineVideoPlayer: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#000000', // Black background for video often looks better
-  },
-  fullscreenVideoPlayer: {
-    width: '100%',
-    height: '100%',
-  },
-  // Controls Styles
-  controlsOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1, // Ensure controls are on top
-  },
-  playButtonContainer: { // This can be the overlay itself for play
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.3)', // Semi-transparent overlay
-  },
-  playButton: {
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    borderRadius: 32, // w-16 h-16 rounded-full
-    width: 64,
-    height: 64,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: Platform.OS === 'ios' ? 0 : 2, // Border was in original, conditional for better look
-    borderColor: 'white',
-  },
-  playIcon: {
-    marginLeft: Platform.OS === 'ios' ? 3 : 2, // Slight adjustment for icon centering
-  },
-  fullscreenButton: {
+  // absolute-fill overlay used in fullscreen image
+  imageOverlay: {
     position: 'absolute',
-    top: 10, // top-2.5
-    right: 10, // right-2.5
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    borderRadius: 20, // w-10 h-10 rounded-full
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  // Fullscreen Modal Styles
-  fullscreenContainer: {
-    flex: 1,
-    backgroundColor: 'black',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  closeButton: {
-    position: 'absolute',
-    // Adjust top for status bar height, more robustly with react-native-safe-area-context if available
-    top: Platform.OS === 'ios' ? (StatusBar.currentHeight || 20) + 10 : (StatusBar.currentHeight || 0) + 15,
-    right: 20,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    borderRadius: 24, // w-12 h-12
-    width: 48,
-    height: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 50, // Ensure it's above other potential controls
-  },
-  fullscreenPlayButton: {
-    backgroundColor: 'rgba(0,0,0,0.8)',
-    borderRadius: 48, // w-24 h-24
-    width: 96,
-    height: 96,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'white',
-  },
-  // Non-Video Content Styles
-  imageStyle: {
-    width: '100%',
-    height: '100%', // Fill the container
-  },
-  placeholderBox: {
-    backgroundColor: '#f3f4f6', // gray-100
-    borderWidth: 1,
-    borderColor: '#d1d5db', // gray-300
-    borderStyle: 'dashed',
-    padding: 20,
-  },
-  placeholderText: {
-    fontSize: 16, // text-sm
-    fontWeight: '500', // font-medium
-    color: '#4b5563', // text-gray-600
-    marginTop: 12, // mb-1 (approx)
-    marginBottom: 4,
-  },
-  placeholderFilename: {
-    fontSize: 12, // text-xs
-    color: '#6b7280', // text-gray-500
-    textAlign: 'center',
-    maxWidth: '90%', // Ensure it doesn't overflow too much
-    paddingHorizontal: 10,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
 });
