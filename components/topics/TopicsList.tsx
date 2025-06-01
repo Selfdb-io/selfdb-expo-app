@@ -196,7 +196,7 @@ export const TopicsList: React.FC<TopicsListProps> = ({
         className="bg-white rounded-lg p-4 mb-4 shadow-sm"
         onPress={() => handleTopicPress(item)}
       >
-        <Text className="text-lg font-bold text-gray-800 mb-2">{item.title}</Text>
+        <Text className="text font-semibold text-gray-800 mb-1">{item.title}</Text>
         <Text className="text-sm text-gray-600 mb-3 leading-5" numberOfLines={2}>
           {item.content}
         </Text>

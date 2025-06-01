@@ -275,7 +275,7 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, topic, onBack
         {/* Topic Content Area */}
         <View className="px-4 pt-4 pb-0">
           <View className="bg-white rounded-lg p-4 mb-4 shadow-sm">
-            <Text className="text-lg font-bold text-gray-800 mb-2">{currentTopic.title}</Text>
+            <Text className="text font-semibold text-gray-800 mb-1">{currentTopic.title}</Text>
             <Text className="text-sm text-gray-600 mb-3 leading-5">{currentTopic.content}</Text>
             {currentTopic.file_id && (
               <View className="mb-3">
@@ -296,7 +296,7 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, topic, onBack
 
         {/* Comments */}
         <View className="px-4 mb-4">
-          <Text className="text-lg font-bold text-gray-800 mb-4">
+          <Text className="text font-semibold text-gray-800 mb-1">
             Comments ({comments.length})
           </Text>
           
