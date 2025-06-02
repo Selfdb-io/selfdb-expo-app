@@ -13,7 +13,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext'
 import { db, storage } from '@/services/selfdb'
 import { Topic } from '@/types'
-import { showMediaPickerOptions, safeLaunchCamera, safeLaunchImageLibrary } from '@/lib/deviceUtils'
+import { useImagePicker } from '@/lib/deviceUtils'
 import { FilePreview } from '@/components/FilePreview'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -49,6 +49,9 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [removeCurrentFile, setRemoveCurrentFile] = useState(false)
   const isEditMode = !!initialTopic
+
+  // image-picker utilities
+  const { showMediaPickerOptions, launchCamera, launchImageLibrary } = useImagePicker()
 
   useEffect(() => {
     if (initialTopic) {
@@ -211,7 +214,7 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
 
   const openCamera = async () => {
     try {
-      const result = await safeLaunchCamera()
+      const result = await launchCamera()
       
       if (!result) {
         Alert.alert(
@@ -237,7 +240,7 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
 
   const openLibrary = async () => {
     try {
-      const result = await safeLaunchImageLibrary()
+      const result = await launchImageLibrary()
       
       if (!result) {
         Alert.alert('Error', 'Failed to access photo library. Please check permissions.')

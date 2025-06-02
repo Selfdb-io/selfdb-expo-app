@@ -273,25 +273,33 @@ export const TopicsList: React.FC<TopicsListProps> = ({
           </View>
           <View className="flex-row items-center">
             {isAuthenticated ? (
-              <View className="flex-row items-center gap-3">
-                <View className="bg-primary-500 w-10 h-10 rounded-full justify-center items-center">
-                  <Text className="text-white text-base font-semibold">
+              <View className="flex-row items-center gap-2">
+                {/* subtle bordered avatar */}
+                <View className="w-9 h-9 rounded-full border border-primary-500 justify-center items-center">
+                  <Text className="text-primary-500 font-semibold">
                     {user?.email?.charAt(0).toUpperCase()}
                   </Text>
                 </View>
+
+                {/* lightweight logout icon */}
                 <TouchableOpacity
-                  className="bg-red-500 p-2 rounded-full justify-center items-center w-10 h-10"
                   onPress={onLogout}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
-                  <Ionicons name="log-out" size={20} color="white" />
+                  <Ionicons name="log-out-outline" size={22} color="#EF4444" />
                 </TouchableOpacity>
               </View>
             ) : (
+              /* lightweight login icon */
               <TouchableOpacity
-                className="bg-primary-500 p-2 rounded-full justify-center items-center w-10 h-10"
                 onPress={onShowAuthModal}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <Ionicons name="person-circle" size={20} color="white" />
+                <Ionicons
+                  name="person-circle-outline"
+                  size={28}
+                  color="#007AFF"
+                />
               </TouchableOpacity>
             )}
           </View>

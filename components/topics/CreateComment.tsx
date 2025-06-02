@@ -13,7 +13,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext'
 import { db, storage } from '@/services/selfdb'
 import { Comment } from '@/types'
-import { showMediaPickerOptions, safeLaunchCamera, safeLaunchImageLibrary } from '@/lib/deviceUtils'
+import { useImagePicker } from '@/lib/deviceUtils'
 import { FilePreview } from '@/components/FilePreview'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -47,6 +47,9 @@ export const CreateComment: React.FC<CreateCommentProps> = ({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [removeCurrentFile, setRemoveCurrentFile] = useState(false)
   const isEditMode = !!initialComment
+
+  // image-picker utilities
+  const { showMediaPickerOptions, launchCamera, launchImageLibrary } = useImagePicker()
 
   useEffect(() => {
     if (initialComment) {
@@ -184,24 +187,9 @@ export const CreateComment: React.FC<CreateCommentProps> = ({
     }
   }
 
-  const pickMedia = async () => {
-    try {
-      const options = await showMediaPickerOptions(openCamera, openLibrary)
-      
-      Alert.alert(
-        'Select Media',
-        'Choose how you want to add media',
-        options
-      )
-    } catch (error) {
-      console.error('Error showing media options:', error)
-      Alert.alert('Error', 'Failed to show media options.')
-    }
-  }
-
   const openCamera = async () => {
     try {
-      const result = await safeLaunchCamera()
+      const result = await launchCamera()
       
       if (!result) {
         Alert.alert(
@@ -227,7 +215,7 @@ export const CreateComment: React.FC<CreateCommentProps> = ({
 
   const openLibrary = async () => {
     try {
-      const result = await safeLaunchImageLibrary()
+      const result = await launchImageLibrary()
       
       if (!result) {
         Alert.alert('Error', 'Failed to access photo library. Please check permissions.')
@@ -242,6 +230,21 @@ export const CreateComment: React.FC<CreateCommentProps> = ({
     } catch (error) {
       console.error('Error picking from library:', error)
       Alert.alert('Error', 'Failed to pick media file.')
+    }
+  }
+
+  const pickMedia = async () => {
+    try {
+      const options = await showMediaPickerOptions(openCamera, openLibrary)
+      
+      Alert.alert(
+        'Select Media',
+        'Choose how you want to add media',
+        options
+      )
+    } catch (error) {
+      console.error('Error showing media options:', error)
+      Alert.alert('Error', 'Failed to show media options.')
     }
   }
 
