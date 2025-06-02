@@ -49,7 +49,7 @@ export const CreateComment: React.FC<CreateCommentProps> = ({
   const isEditMode = !!initialComment
 
   // image-picker utilities
-  const { showMediaPickerOptions, launchCamera, launchImageLibrary } = useImagePicker()
+  const { launchCamera, launchImageLibrary } = useImagePicker()
 
   useEffect(() => {
     if (initialComment) {
@@ -188,64 +188,53 @@ export const CreateComment: React.FC<CreateCommentProps> = ({
   }
 
   const openCamera = async () => {
-    try {
-      const result = await launchCamera()
-      
-      if (!result) {
-        Alert.alert(
-          'Camera Error', 
-          'Failed to open camera. This might be because you\'re using a simulator. Please try using Photo Library instead.'
-        )
-        return
-      }
-
-      if (!result.canceled && result.assets[0]) {
-        const asset = result.assets[0]
-        setSelectedFile(asset.uri)
-        setUploadedFileId(null)
-      }
-    } catch (error) {
-      console.error('Error opening camera:', error)
+    const result = await launchCamera()
+    
+    if (result && !result.canceled && result.assets[0]) {
+      const asset = result.assets[0]
+      setSelectedFile(asset.uri)
+      setUploadedFileId(null)
+    } else if (result === null) {
       Alert.alert(
         'Camera Error', 
-        'Failed to open camera. This might be because you\'re using a simulator. Please try using Photo Library instead.'
+        'Failed to open camera. This might be because you\'re using a simulator or permissions were denied.'
       )
     }
+    // If result.canceled is true, user cancelled - no action needed
   }
 
   const openLibrary = async () => {
-    try {
-      const result = await launchImageLibrary()
-      
-      if (!result) {
-        Alert.alert('Error', 'Failed to access photo library. Please check permissions.')
-        return
-      }
-
-      if (!result.canceled && result.assets[0]) {
-        const asset = result.assets[0]
-        setSelectedFile(asset.uri)
-        setUploadedFileId(null)
-      }
-    } catch (error) {
-      console.error('Error picking from library:', error)
-      Alert.alert('Error', 'Failed to pick media file.')
+    const result = await launchImageLibrary()
+    
+    if (result && !result.canceled && result.assets[0]) {
+      const asset = result.assets[0]
+      setSelectedFile(asset.uri)
+      setUploadedFileId(null)
+    } else if (result === null) {
+      Alert.alert('Error', 'Failed to access photo library. Please check permissions in Settings.')
     }
+    // If result.canceled is true, user cancelled - no action needed
   }
 
   const pickMedia = async () => {
-    try {
-      const options = await showMediaPickerOptions(openCamera, openLibrary)
-      
-      Alert.alert(
-        'Select Media',
-        'Choose how you want to add media',
-        options
-      )
-    } catch (error) {
-      console.error('Error showing media options:', error)
-      Alert.alert('Error', 'Failed to show media options.')
-    }
+    Alert.alert(
+      'Select Media',
+      'Choose how you want to add media',
+      [
+        {
+          text: 'Camera',
+          onPress: openCamera,
+        },
+        {
+          text: 'Photo Library',
+          onPress: openLibrary,
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+      ]
+    )
   }
 
   const removeFile = () => {
