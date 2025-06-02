@@ -1,44 +1,45 @@
 # SelfDB Expo Integration
 
-> To use this app you must have a SelfDB instance running locally or remotely.  
-> Don’t have SelfDB yet? Grab a your selfhostable copy <https://selfdb.io> and follow the installation guide on our website.
+To use this app you must have a SelfDB instance running locally or remotely.  
+Don’t have SelfDB yet? Grab a your self-hostable copy <https://selfdb.io> and follow the installation guide on our website.
 
-> ## Database Setup
-> 1. Create the required tables in SelfDB:
->    ```sql
->   -- Create topics table
->        CREATE TABLE IF NOT EXISTS topics (
->            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
->            title VARCHAR(255) NOT NULL,
->            content TEXT NOT NULL,
->            author_name VARCHAR(100) NOT NULL,
->            author_name VARCHAR(100) NOT NULL,
->            user_id UUID,
->            file_id UUID,
->            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
->            updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
->        );
->        
->        -- Create comments table
->        CREATE TABLE IF NOT EXISTS comments (
->            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
->            topic_id UUID NOT NULL REFERENCES topics(id),
->            content TEXT NOT NULL,
->            author_name VARCHAR(100) NOT NULL,
->            user_id UUID,
->            file_id UUID,
->            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
->            updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
->        );
->        
->        -- Create indexes for better performance
->        CREATE INDEX IF NOT EXISTS idx_comments_topic_id ON comments(topic_id);
->        CREATE INDEX IF NOT EXISTS idx_topics_user_id ON topics(user_id);
->        CREATE INDEX IF NOT EXISTS idx_comments_user_id ON comments(user_id);
->        CREATE INDEX IF NOT EXISTS idx_topics_created_at ON topics(created_at);
->        CREATE INDEX IF NOT EXISTS idx_comments_created_at ON comments(created_at);
->    ```
-> 2. Create a **public** storage bucket named `discussion`.
+## Database Setup
+1. Create the required tables in SelfDB:
+
+```sql
+-- Create topics table
+CREATE TABLE IF NOT EXISTS topics (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    author_name VARCHAR(100) NOT NULL,
+    user_id UUID,
+    file_id UUID,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create comments table
+CREATE TABLE IF NOT EXISTS comments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    topic_id UUID NOT NULL REFERENCES topics(id),
+    content TEXT NOT NULL,
+    author_name VARCHAR(100) NOT NULL,
+    user_id UUID,
+    file_id UUID,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_comments_topic_id ON comments(topic_id);
+CREATE INDEX IF NOT EXISTS idx_topics_user_id ON topics(user_id);
+CREATE INDEX IF NOT EXISTS idx_comments_user_id ON comments(user_id);
+CREATE INDEX IF NOT EXISTS idx_topics_created_at ON topics(created_at);
+CREATE INDEX IF NOT EXISTS idx_comments_created_at ON comments(created_at);
+```
+
+2. Create a **public** storage bucket named `discussion`.
 
 ## Project Overview
 This Expo React Native application demonstrates how to use **SelfDB** as the backend while following mobile best-practices. It ships with:
@@ -93,11 +94,12 @@ This Expo React Native application demonstrates how to use **SelfDB** as the bac
 
 ## Environment Setup
 
-  ```bash
+```bash
 cp .env.example .env
-  ```
+```
 
 Edit `.env` and point it to your SelfDB instance:
+
 ```env
 EXPO_PUBLIC_SELFDB_URL=http://localhost:8000
 EXPO_PUBLIC_SELFDB_STORAGE_URL=http://localhost:8001
