@@ -49,7 +49,7 @@ export const CreateComment: React.FC<CreateCommentProps> = ({
   const isEditMode = !!initialComment
 
   // image-picker utilities
-  const { launchCamera, launchImageLibrary } = useImagePicker()
+  const { launchCamera, launchImageLibrary, showMediaPickerOptions } = useImagePicker()
 
   useEffect(() => {
     if (initialComment) {
@@ -217,23 +217,11 @@ export const CreateComment: React.FC<CreateCommentProps> = ({
   }
 
   const pickMedia = async () => {
+    const options = await showMediaPickerOptions(openCamera, openLibrary)
     Alert.alert(
       'Select Media',
       'Choose how you want to add media',
-      [
-        {
-          text: 'Camera',
-          onPress: openCamera,
-        },
-        {
-          text: 'Photo Library',
-          onPress: openLibrary,
-        },
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-      ]
+      options
     )
   }
 

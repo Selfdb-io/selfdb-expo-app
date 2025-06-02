@@ -51,7 +51,7 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
   const isEditMode = !!initialTopic
 
   // image-picker utilities
-  const { launchCamera, launchImageLibrary } = useImagePicker()
+  const { launchCamera, launchImageLibrary, showMediaPickerOptions } = useImagePicker()
 
   useEffect(() => {
     if (initialTopic) {
@@ -198,23 +198,11 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
   }
 
   const pickMedia = async () => {
+    const options = await showMediaPickerOptions(openCamera, openLibrary)
     Alert.alert(
       'Select Media',
       'Choose how you want to add media',
-      [
-        {
-          text: 'Camera',
-          onPress: openCamera,
-        },
-        {
-          text: 'Photo Library',
-          onPress: openLibrary,
-        },
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-      ]
+      options
     )
   }
 
