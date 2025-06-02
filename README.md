@@ -6,27 +6,37 @@
 > ## Database Setup
 > 1. Create the required tables in SelfDB:
 >    ```sql
->    -- topics table
->    CREATE TABLE "topics" (
->      "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
->      "title"        varchar(255) NOT NULL,
->      "content"      text         NOT NULL,
->      "author_name"  varchar(100) NOT NULL,
->      "user_id"      uuid,
->      "file_id"      uuid,
->      "created_at"   timestamptz DEFAULT now(),
->      "updated_at"   timestamptz DEFAULT now()
->    );
->
->    -- comments table
->    CREATE TABLE "comments" (
->      "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
->      "topic_id"    uuid        NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
->      "content"     text        NOT NULL,
->      "author_name" varchar(100) NOT NULL,
->      "user_id"     uuid,
->      "created_at"  timestamptz DEFAULT now()
->    );
+>   -- Create topics table
+>        CREATE TABLE IF NOT EXISTS topics (
+>            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+>            title VARCHAR(255) NOT NULL,
+>            content TEXT NOT NULL,
+>            author_name VARCHAR(100) NOT NULL,
+>            author_name VARCHAR(100) NOT NULL,
+>            user_id UUID,
+>            file_id UUID,
+>            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+>            updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+>        );
+>        
+>        -- Create comments table
+>        CREATE TABLE IF NOT EXISTS comments (
+>            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+>            topic_id UUID NOT NULL REFERENCES topics(id),
+>            content TEXT NOT NULL,
+>            author_name VARCHAR(100) NOT NULL,
+>            user_id UUID,
+>            file_id UUID,
+>            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+>            updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+>        );
+>        
+>        -- Create indexes for better performance
+>        CREATE INDEX IF NOT EXISTS idx_comments_topic_id ON comments(topic_id);
+>        CREATE INDEX IF NOT EXISTS idx_topics_user_id ON topics(user_id);
+>        CREATE INDEX IF NOT EXISTS idx_comments_user_id ON comments(user_id);
+>        CREATE INDEX IF NOT EXISTS idx_topics_created_at ON topics(created_at);
+>        CREATE INDEX IF NOT EXISTS idx_comments_created_at ON comments(created_at);
 >    ```
 > 2. Create a **public** storage bucket named `discussion`.
 
