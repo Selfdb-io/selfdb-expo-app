@@ -58,8 +58,8 @@ cp .env.example .env
 
 The `.env` file contains your SelfDB configuration:
 ```
-EXPO_PUBLIC_SELFDB_URL=https://api.selfdb.io
-EXPO_PUBLIC_SELFDB_STORAGE_URL=https://storage.selfdb.io
+EXPO_PUBLIC_SELFDB_URL=http://localhost:8000
+EXPO_PUBLIC_SELFDB_STORAGE_URL=http://localhost:8001
 EXPO_PUBLIC_SELFDB_ANON_KEY=your_key_here
 ```
 
