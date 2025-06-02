@@ -1,103 +1,77 @@
-
 # SelfDB Expo Integration
 
-This Expo React Native project has been successfully integrated with SelfDB SDK. Here's what has been set up:
+> To use this app you must have a SelfDB instance running locally or remotely.  
+> Don’t have SelfDB yet? Grab a license at <https://selfdb.io> and follow the installation guide on our website.
 
-## Features Implemented
+## Project Overview
+This Expo React Native application demonstrates how to use **SelfDB** as the backend while following mobile best-practices. It ships with:
 
-### 🔐 Authentication
-- **AuthContext**: Complete authentication provider with React Context
-- **Login/Register Screens**: Native mobile forms with proper keyboard handling
-- **Auth Modal**: Modal component for login/register flows
-- **Persistent Auth**: Automatic auth state restoration on app restart
+- 🔐 **Authentication** (context provider, login / register screens, persistent session)
+- 🗄️ **Database CRUD** (topics & comments with file upload)
+- 📡 **Real-time ready** subscriptions
+- 🏗️ **Modular project structure** (components, contexts, types, services)
 
-### 📱 UI Components
-- **TopicsList**: Display topics with pull-to-refresh
-- **CreateTopic**: Form to create new topics with file upload support
-- **TopicDetail**: View individual topics and comments
-- **Auth Screens**: Native login and registration forms
-
-### 🗄️ Database Integration
-- **SelfDB Client**: Configured with environment variables
-- **CRUD Operations**: Create, read topics and comments
-- **Real-time Support**: Ready for real-time updates
-
-### 🏗️ Project Structure
-```
-services/
-  selfdb.ts          # SelfDB client configuration
-contexts/
-  AuthContext.tsx    # Authentication state management
-components/
-  auth/             # Authentication components
-    AuthModal.tsx
-    LoginScreen.tsx
-    RegisterScreen.tsx
-  topics/           # Topic-related components
-    TopicsList.tsx
-    CreateTopic.tsx
-types/
-  index.ts          # TypeScript definitions
-lib/
-  utils.ts          # Utility functions
-```
+## Prerequisites
+- Node.js ≥ 18
+- Expo CLI (`npm i -g expo-cli`)
+- A running SelfDB instance (local or remote)
 
 ## Quick Start
-
-git clone https://github.com/Selfdb-io/selfdb-expo-app
-
-cd selfdb-expo-app
-
-Create a .env file from the example:
-```
-cp .env.example .env
-```
-
+1. Clone the repo  
+   ```bash
+   git clone https://github.com/Selfdb-io/selfdb-expo-app
+   cd selfdb-expo-app
+   ```
+2. Copy the environment template  
+   ```bash
+   cp .env.example .env
+   ```
+3. Install dependencies  
+   ```bash
+   npm install
+   ```
+4. Start the development server  
+   ```bash
+   npx expo start
+   ```
+5. Open the project in the Expo Go app (or run it on an emulator)
 
 ## Environment Setup
-
-The `.env` file contains your SelfDB configuration:
-```
+Edit `.env` and point it to your SelfDB instance:
+```env
 EXPO_PUBLIC_SELFDB_URL=http://localhost:8000
 EXPO_PUBLIC_SELFDB_STORAGE_URL=http://localhost:8001
 EXPO_PUBLIC_SELFDB_ANON_KEY=your_key_here
 ```
 
-## Key Differences from Vite React
+## Database Setup
+1. Create the required tables in SelfDB:
+   ```sql
+   -- topics table
+   CREATE TABLE "topics" (
+     "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+     "title"        varchar(255) NOT NULL,
+     "content"      text         NOT NULL,
+     "author_name"  varchar(100) NOT NULL,
+     "user_id"      uuid,
+     "file_id"      uuid,
+     "created_at"   timestamptz DEFAULT now(),
+     "updated_at"   timestamptz DEFAULT now()
+   );
 
-1. **Environment Variables**: Uses `EXPO_PUBLIC_` prefix instead of `VITE_`
-2. **Navigation**: Uses Expo Router instead of React Router
-3. **Styling**: React Native StyleSheet instead of CSS
-4. **Components**: Native components (View, Text, TouchableOpacity) instead of HTML
-5. **File Uploads**: Ready for React Native image picker integration
-
-## Getting Started
-
-1. **Install dependencies** (already done):
-   ```bash
-   npm install
+   -- comments table
+   CREATE TABLE "comments" (
+     "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+     "topic_id"    uuid        NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
+     "content"     text        NOT NULL,
+     "author_name" varchar(100) NOT NULL,
+     "user_id"     uuid,
+     "created_at"  timestamptz DEFAULT now()
+   );
    ```
-
-2. **Start the development server**:
-   ```bash
-   npx expo start
-   ```
-
-3. **Test the app**:
-   - Open in Expo Go app on your phone
-   - Or run on iOS/Android emulator
+2. Create a **public** storage bucket named `discussion`.
 
 ## Next Steps
-
-To fully test the integration, you'll need to:
-
-1. Set up your SelfDB backend with the proper tables:
-   - `topics` table
-   - `comments` table
-   - User authentication
-
-2. Update the `.env` file with your actual SelfDB credentials
-
-3. Test the authentication flow and data operations
-
-The codebase is now ready and follows React Native best practices while maintaining the same functionality as the original Vite React implementation.
+1. Update `.env` with your production SelfDB credentials.  
+2. Test the authentication flow and data operations.  
+3. Extend the UI or schemas as needed—the foundation is already wired up for you.
