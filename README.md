@@ -44,34 +44,49 @@ This Expo React Native application demonstrates how to use **SelfDB** as the bac
 - A running SelfDB instance (local or remote)
 
 ## Quick Start
-1. Clone the repo  
+
+1. **Clone the repo**
    ```bash
    git clone https://github.com/Selfdb-io/selfdb-expo-app
    cd selfdb-expo-app
    ```
-2. Copy the environment template  
+
+2. **Copy the environment template**
    ```bash
    cp .env.example .env
    ```
-3. Install dependencies  
+
+3. **Install dependencies**
    ```bash
    npm install
    ```
-4. Start the development server  for iOS development
+
+4. **Install additional tools (if needed)**
    ```bash
-# Install Watchman (improves file watching performance)
-brew update && brew install watchman # <--- if you don't have it installed already
+   # Install Watchman (improves file watching performance)
+   brew update && brew install watchman # <--- if you don't have it installed already
+   
+   # Install Expo Dev Client for better debugging
+   npx expo install expo-dev-client # <--- if you don't have it installed already
+   ```
 
-# Install Expo Dev Client for better debugging
-npx expo install expo-dev-client # <--- if you don't have it installed already
+5. **Start the development server**
+   ```bash
+   # For general development
+   npx expo start
+   
+   # Or run directly on iOS simulator/device
+   npx expo run:ios
+   ```
 
-# Run on iOS simulator/device
-npx expo run:ios
-```
-5. Open the project in the Expo Go app (or run it on an emulator)
 
 
 ## Environment Setup
+
+  ```bash
+cp .env.example .env
+  ```
+
 Edit `.env` and point it to your SelfDB instance:
 ```env
 EXPO_PUBLIC_SELFDB_URL=http://localhost:8000
