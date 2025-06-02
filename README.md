@@ -3,6 +3,33 @@
 > To use this app you must have a SelfDB instance running locally or remotely.  
 > Don’t have SelfDB yet? Grab a your selfhostable copy <https://selfdb.io> and follow the installation guide on our website.
 
+> ## Database Setup
+> 1. Create the required tables in SelfDB:
+>    ```sql
+>    -- topics table
+>    CREATE TABLE "topics" (
+>      "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+>      "title"        varchar(255) NOT NULL,
+>      "content"      text         NOT NULL,
+>      "author_name"  varchar(100) NOT NULL,
+>      "user_id"      uuid,
+>      "file_id"      uuid,
+>      "created_at"   timestamptz DEFAULT now(),
+>      "updated_at"   timestamptz DEFAULT now()
+>    );
+>
+>    -- comments table
+>    CREATE TABLE "comments" (
+>      "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+>      "topic_id"    uuid        NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
+>      "content"     text        NOT NULL,
+>      "author_name" varchar(100) NOT NULL,
+>      "user_id"     uuid,
+>      "created_at"  timestamptz DEFAULT now()
+>    );
+>    ```
+> 2. Create a **public** storage bucket named `discussion`.
+
 ## Project Overview
 This Expo React Native application demonstrates how to use **SelfDB** as the backend while following mobile best-practices. It ships with:
 
@@ -52,32 +79,7 @@ EXPO_PUBLIC_SELFDB_STORAGE_URL=http://localhost:8001
 EXPO_PUBLIC_SELFDB_ANON_KEY=your_key_here
 ```
 
-## Database Setup
-1. Create the required tables in SelfDB:
-   ```sql
-   -- topics table
-   CREATE TABLE "topics" (
-     "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-     "title"        varchar(255) NOT NULL,
-     "content"      text         NOT NULL,
-     "author_name"  varchar(100) NOT NULL,
-     "user_id"      uuid,
-     "file_id"      uuid,
-     "created_at"   timestamptz DEFAULT now(),
-     "updated_at"   timestamptz DEFAULT now()
-   );
 
-   -- comments table
-   CREATE TABLE "comments" (
-     "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-     "topic_id"    uuid        NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
-     "content"     text        NOT NULL,
-     "author_name" varchar(100) NOT NULL,
-     "user_id"     uuid,
-     "created_at"  timestamptz DEFAULT now()
-   );
-   ```
-2. Create a **public** storage bucket named `discussion`.
 
 ## Next Steps
 1. Update `.env` with your production SelfDB credentials.  
