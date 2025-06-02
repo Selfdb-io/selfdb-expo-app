@@ -16,10 +16,11 @@ export const CommentCard: React.FC<CommentCardProps> = ({
   onCommentUpdated,
   onCommentDeleted,
 }) => (
-  <View className="bg-white rounded-lg p-4 mb-3 shadow-sm">
+  <View className="bg-white rounded-lg p-4 mb-3 shadow-sm border border-gray-200
+                   dark:bg-gray-800 dark:border-gray-700">
     <View className="flex-row justify-between items-start gap-3">
       <View className="flex-1">
-        <Text className="text-sm text-gray-600 leading-5 mb-3">
+        <Text className="text-sm text-gray-600 dark:text-gray-300 leading-5 mb-3">
           {comment.content}
         </Text>
       </View>
@@ -41,7 +42,7 @@ export const CommentCard: React.FC<CommentCardProps> = ({
       <Text className="text-xs text-primary-500 font-medium">
         {comment.author_name}
       </Text>
-      <Text className="text-xs text-gray-400">
+      <Text className="text-xs text-gray-400 dark:text-gray-500">
         {formatDate(comment.created_at)}
       </Text>
     </View>

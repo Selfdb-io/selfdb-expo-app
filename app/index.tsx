@@ -31,7 +31,7 @@ export default function HomeScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-100">
+      <SafeAreaView className="flex-1 bg-gray-100 dark:bg-gray-900">
         <ThemedView className="flex-1 justify-center items-center">
           <ThemedText>Loading...</ThemedText>
         </ThemedView>
@@ -41,7 +41,7 @@ export default function HomeScreen() {
 
   if (showCreateTopic) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-100">
+      <SafeAreaView className="flex-1 bg-gray-100 dark:bg-gray-900">
         <CreateTopic
           onTopicCreated={handleTopicCreated}
           onCancel={() => setShowCreateTopic(false)}
@@ -51,7 +51,7 @@ export default function HomeScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-100">
+    <SafeAreaView className="flex-1 bg-gray-100 dark:bg-gray-900">
       <View className="flex-1">
         <TopicsList 
           onCreateTopic={() => setShowCreateTopic(true)} 

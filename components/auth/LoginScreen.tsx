@@ -45,7 +45,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-100">
+    <SafeAreaView className="flex-1 bg-gray-100 dark:bg-gray-900">
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"

@@ -32,13 +32,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View className="flex-1 bg-gray-100">
+      <View className="flex-1 bg-gray-100 dark:bg-gray-900">
         <View className="flex-row justify-end px-5 pt-5 pb-2.5">
-          <TouchableOpacity 
-            className="w-10 h-10 rounded-full bg-gray-300 justify-center items-center" 
+          <TouchableOpacity
+            className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-700 justify-center items-center"
             onPress={onClose}
           >
-            <Text className="text-lg text-gray-600 font-bold">✕</Text>
+            <Text className="text-lg text-gray-600 dark:text-gray-200 font-bold">✕</Text>
           </TouchableOpacity>
         </View>
         

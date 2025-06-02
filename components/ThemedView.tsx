@@ -11,10 +11,10 @@ export function ThemedView({ style, lightColor, darkColor, className, ...otherPr
   const backgroundColor = useThemeColor({ light: lightColor, dark: darkColor }, 'background');
 
   return (
-    <View 
-      className={className}
-      style={[{ backgroundColor }, style]} 
-      {...otherProps} 
+    <View
+      className={`${className ?? ''} dark:bg-gray-900`}   // 🆕 auto dark bg
+      style={[{ backgroundColor }, style]}
+      {...otherProps}
     />
   );
 }

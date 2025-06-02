@@ -22,11 +22,12 @@ export const TopicCard: React.FC<TopicCardProps> = ({
 
   return (
     <Container
-      className="bg-white rounded-lg p-4 mb-4 shadow-sm"
+      className="bg-white rounded-lg p-4 mb-4 shadow-sm border border-gray-200
+                 dark:bg-gray-800 dark:border-gray-700"
       {...(onPress ? { onPress, activeOpacity: 0.8 } : {})}
     >
       {/* Title first */}
-      <Text className="text font-semibold text-gray-800 mb-2">
+      <Text className="text font-semibold text-gray-800 dark:text-gray-100 mb-2">
         {topic.title}
       </Text>
 
@@ -39,7 +40,7 @@ export const TopicCard: React.FC<TopicCardProps> = ({
 
       {/* Description / content */}
       <Text
-        className="text-sm text-gray-600 mb-3 leading-5"
+        className="text-sm text-gray-600 dark:text-gray-300 mb-3 leading-5"
         numberOfLines={contentNumberOfLines}
       >
         {topic.content}
@@ -50,7 +51,7 @@ export const TopicCard: React.FC<TopicCardProps> = ({
         <Text className="text-xs text-primary-500 font-medium">
           By {topic.author_name}
         </Text>
-        <Text className="text-xs text-gray-400">
+        <Text className="text-xs text-gray-400 dark:text-gray-500">
           {formatDate(topic.created_at)}
         </Text>
       </View>

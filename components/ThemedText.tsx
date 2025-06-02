@@ -36,7 +36,7 @@ export function ThemedText({
 }: ThemedTextProps) {
   const color = useThemeColor({ light: lightColor, dark: darkColor }, 'text');
   const typeClasses = getTypeClasses(type);
-  const combinedClassName = `${typeClasses} ${className || ''}`.trim();
+  const combinedClassName = `${typeClasses} ${className || ''} dark:text-gray-100`.trim();
 
   return (
     <Text

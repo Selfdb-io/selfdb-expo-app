@@ -42,7 +42,7 @@ export default function TopicDetailScreen() {
     return (
       <>
         <Stack.Screen options={{ headerShown: false }} />
-        <SafeAreaView className="flex-1 bg-gray-100">
+        <SafeAreaView className="flex-1 bg-gray-100 dark:bg-gray-900">
           <View className="flex-1 justify-center items-center">
             <Text className="text-red-500 text-lg mb-5">
               {!topicId ? 'Invalid topic ID' : 'Failed to load topic'}
@@ -64,9 +64,9 @@ export default function TopicDetailScreen() {
     return (
       <>
         <Stack.Screen options={{ headerShown: false }} />
-        <SafeAreaView className="flex-1 bg-gray-100">
+        <SafeAreaView className="flex-1 bg-gray-100 dark:bg-gray-900">
           {/* Header with same structure as TopicDetail to prevent layout shift */}
-          <View className="flex-row justify-between items-center px-5 pb-2 border-b border-gray-200">
+          <View className="flex-row justify-between items-center px-5 pb-2 border-b border-gray-200 dark:border-gray-700">
             <TouchableOpacity
               className="p-2 rounded-full justify-center items-center w-10 h-10"
               onPress={() => router.canGoBack() ? router.back() : router.replace('/')}
@@ -84,7 +84,7 @@ export default function TopicDetailScreen() {
           {/* Loading content */}
           <View className="flex-1 justify-center items-center">
             <ActivityIndicator size="large" color="#007AFF" />
-            <Text className="text-gray-600 text-base mt-4">Loading topic...</Text>
+            <Text className="text-gray-600 dark:text-gray-300 text-base mt-4">Loading topic...</Text>
           </View>
         </SafeAreaView>
       </>
@@ -99,7 +99,7 @@ export default function TopicDetailScreen() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <SafeAreaView className="flex-1 bg-gray-100">
+      <SafeAreaView className="flex-1 bg-gray-100 dark:bg-gray-900">
         <TopicDetail
           topicId={topicId}
           topic={parsedTopic}

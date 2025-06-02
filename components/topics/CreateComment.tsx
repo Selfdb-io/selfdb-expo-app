@@ -301,33 +301,30 @@ export const CreateComment: React.FC<CreateCommentProps> = ({
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-gray-100"
-    >
+      className="flex-1 bg-gray-100 dark:bg-gray-900">
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <View className="p-5">
-          {/* Header with cancel button */}
+          {/* Header */}
           <View className="flex-row justify-between items-center mb-5">
             <TouchableOpacity
-              className="p-2 rounded-md bg-gray-50"
+              className="p-2 rounded-md bg-gray-50 dark:bg-gray-800"
               onPress={onCancel}
               disabled={loading}
             >
               <Ionicons name="close" size={24} color="#007AFF" />
             </TouchableOpacity>
-            <Text className="text-2xl font-bold text-gray-800 text-center">
+
+            <Text className="text-2xl font-bold text-gray-800 dark:text-gray-100 text-center">
               {isEditMode ? 'Edit Comment' : 'Add Comment'}
             </Text>
-            {isEditMode ? (
-              <TouchableOpacity
-                className="p-2 rounded-md bg-gray-50"
-                onPress={() => setShowDeleteDialog(true)}
-                disabled={loading}
-              >
-                <Ionicons name="trash" size={24} color="#ff4757" />
-              </TouchableOpacity>
-            ) : (
-              <View className="w-10" />
-            )}
+
+            <TouchableOpacity
+              className="p-2 rounded-md bg-gray-50 dark:bg-gray-800"
+              onPress={() => setShowDeleteDialog(true)}
+              disabled={loading}
+            >
+              <Ionicons name="trash" size={24} color="#ff4757" />
+            </TouchableOpacity>
           </View>
           
           <View className="mb-8">
@@ -356,7 +353,7 @@ export const CreateComment: React.FC<CreateCommentProps> = ({
             {/* File Upload Section */}
             <View className="mt-4">
               <TouchableOpacity
-                className="bg-gray-50 border border-gray-300 rounded-lg py-3 px-4 items-center mb-3"
+                className="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg py-3 px-4 items-center mb-3"
                 onPress={pickMedia}
                 disabled={loading}
               >
@@ -366,7 +363,7 @@ export const CreateComment: React.FC<CreateCommentProps> = ({
               </TouchableOpacity>
 
               {selectedFile && (
-                <View className="bg-gray-50 border border-gray-300 rounded-lg p-3 items-center">
+                <View className="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-3 items-center">
                   <View className="w-full mb-3">
                     <FilePreview 
                       localUri={selectedFile}
@@ -384,7 +381,7 @@ export const CreateComment: React.FC<CreateCommentProps> = ({
               
               {/* Show current file if editing and no new file selected */}
               {isEditMode && initialComment?.file_id && !selectedFile && !removeCurrentFile && (
-                <View className="bg-gray-50 border border-gray-300 rounded-lg p-3 mt-3">
+                <View className="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-3 mt-3">
                   <View className="w-full mb-3">
                     <FilePreview 
                       fileId={initialComment.file_id} 
@@ -457,11 +454,11 @@ export const CreateComment: React.FC<CreateCommentProps> = ({
           onRequestClose={() => setShowDeleteDialog(false)}
         >
           <View className="flex-1 bg-black/50 justify-center items-center">
-            <View className="bg-white rounded-xl p-5 mx-5 min-w-75">
-              <Text className="text-lg font-bold text-gray-800 mb-3 text-center">
+            <View className="bg-white dark:bg-gray-800 rounded-xl p-5 mx-5 min-w-75">
+              <Text className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-3 text-center">
                 Delete Comment?
               </Text>
-              <Text className="text-sm text-gray-600 text-center mb-5 leading-5">
+              <Text className="text-sm text-gray-600 dark:text-gray-300 text-center mb-5 leading-5">
                 This action cannot be undone. This will permanently delete this comment.
               </Text>
               <View className="flex-row gap-3">

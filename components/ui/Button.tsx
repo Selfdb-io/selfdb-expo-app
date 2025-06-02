@@ -7,10 +7,10 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: "bg-primary-500 active:bg-primary-600",
-        secondary: "bg-gray-200 active:bg-gray-300",
-        outline: "border border-gray-300 bg-transparent active:bg-gray-50",
-        ghost: "bg-transparent active:bg-gray-100",
+        primary: "bg-primary-500 active:bg-primary-600 dark:bg-primary-400 dark:active:bg-primary-300",
+        secondary: "bg-gray-200 active:bg-gray-300 dark:bg-gray-700 dark:active:bg-gray-600",
+        outline: "border border-gray-300 bg-transparent active:bg-gray-50 dark:border-gray-600 dark:active:bg-gray-700",
+        ghost: "bg-transparent active:bg-gray-100 dark:active:bg-gray-700",
       },
       size: {
         sm: "px-3 py-2",
@@ -29,9 +29,9 @@ const textVariants = cva("font-medium", {
   variants: {
     variant: {
       primary: "text-white",
-      secondary: "text-gray-900",
-      outline: "text-gray-900",
-      ghost: "text-gray-700",
+      secondary: "text-gray-900 dark:text-gray-100",
+      outline: "text-gray-900 dark:text-gray-100",
+      ghost: "text-primary-500 dark:text-primary-400 underline",
     },
     size: {
       sm: "text-sm",

@@ -228,16 +228,15 @@ export const TopicsList: React.FC<TopicsListProps> = ({
     const isVisible = visibleTopics.has(item.id.toString())
 
     if (!isVisible) {
-      // Show loading skeleton while waiting for content to be synchronized
       return (
-        <View className="bg-gray-50 rounded-lg p-4 mb-4">
-          <View className="h-5 bg-gray-300 rounded mb-2 w-3/4" />
-          <View className="h-4 bg-gray-300 rounded mb-1.5 w-full" />
-          <View className="h-4 bg-gray-300 rounded mb-1.5 w-full" />
-          {item.file_id && <View className="h-50 bg-gray-300 rounded mb-3" />}
+        <View className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-4">
+          <View className="h-5 bg-gray-300 dark:bg-gray-600 rounded mb-2 w-3/4" />
+          <View className="h-4 bg-gray-300 dark:bg-gray-600 rounded mb-1.5 w-full" />
+          <View className="h-4 bg-gray-300 dark:bg-gray-600 rounded mb-1.5 w-full" />
+          {item.file_id && <View className="h-50 bg-gray-300 dark:bg-gray-600 rounded mb-3" />}
           <View className="flex-row justify-between items-center mb-1">
-            <View className="h-3 bg-gray-300 rounded w-15" />
-            <View className="h-3 bg-gray-300 rounded w-20" />
+            <View className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-15" />
+            <View className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-20" />
           </View>
         </View>
       )
@@ -257,19 +256,21 @@ export const TopicsList: React.FC<TopicsListProps> = ({
     return (
       <View className="flex-1 justify-center items-center">
         <ActivityIndicator size="large" color="#007AFF" />
-        <Text className="mt-3 text-gray-600 text-base">Loading topics...</Text>
+        <Text className="mt-3 text-gray-600 dark:text-gray-300 text-base">Loading topics...</Text>
       </View>
     )
   }
 
   return (
-    <View className="flex-1 bg-gray-100">
-      {/* Header - only show when showHeader is true */}
+    <View className="flex-1 bg-gray-100 dark:bg-gray-900">
+      {/* Header */}
       {showHeader && (
-        <View className="flex-row justify-between items-center px-5 pb-2 border-b border-gray-200">
+        <View className="flex-row justify-between items-center px-5 pb-2 border-b border-gray-200 dark:border-gray-700">
           <View className="flex-row items-center gap-3">
             <SvgComponent width={40} height={40} />
-            <Text className="text-black text-lg font-semibold">Open Discussion Board</Text>
+            <Text className="text-black dark:text-gray-100 text-lg font-semibold">
+              Open Discussion Board
+            </Text>
           </View>
           <View className="flex-row items-center">
             {isAuthenticated ? (
@@ -290,17 +291,19 @@ export const TopicsList: React.FC<TopicsListProps> = ({
                 </TouchableOpacity>
               </View>
             ) : (
-              /* lightweight login icon */
-              <TouchableOpacity
-                onPress={onShowAuthModal}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Ionicons
-                  name="person-circle-outline"
-                  size={28}
-                  color="#007AFF"
-                />
-              </TouchableOpacity>
+              <>
+                {/* lightweight login icon */}
+                <TouchableOpacity
+                  onPress={onShowAuthModal}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Ionicons
+                    name="person-circle-outline"
+                    size={28}
+                    color="#007AFF"
+                  />
+                </TouchableOpacity>
+              </>
             )}
           </View>
         </View>

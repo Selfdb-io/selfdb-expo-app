@@ -328,25 +328,25 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-gray-100"
-    >
+      className="flex-1 bg-gray-100 dark:bg-gray-900">
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <View className="p-5">
-          {/* Header with cancel button */}
+          {/* Header */}
           <View className="flex-row justify-between items-center mb-5">
             <TouchableOpacity
-              className="p-2 rounded-md bg-gray-50"
+              className="p-2 rounded-md bg-gray-50 dark:bg-gray-800"
               onPress={onCancel}
-              disabled={loading}
-            >
+              disabled={loading}>
               <Ionicons name="close" size={24} color="#007AFF" />
             </TouchableOpacity>
-            <Text className="text-2xl font-bold text-gray-800 text-center">
+
+            <Text className="text-2xl font-bold text-gray-800 dark:text-gray-100 text-center">
               {isEditMode ? 'Edit Topic' : 'Create New Topic'}
             </Text>
+
             {isEditMode ? (
               <TouchableOpacity
-                className="p-2 rounded-md bg-gray-50"
+                className="p-2 rounded-md bg-gray-50 dark:bg-gray-800"
                 onPress={() => setShowDeleteDialog(true)}
                 disabled={loading}
               >
@@ -391,7 +391,7 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
           {/* File Upload Section */}
           <View className="mt-4">
             <TouchableOpacity
-              className="bg-gray-50 border border-gray-300 rounded-lg py-3 px-4 items-center mb-3"
+              className="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg py-3 px-4 items-center mb-3"
               onPress={pickMedia}
               disabled={loading}
             >
@@ -401,7 +401,7 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
             </TouchableOpacity>
 
               {selectedFile && (
-                <View className="bg-gray-50 border border-gray-300 rounded-lg p-3 items-center">
+                <View className="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-3 items-center">
                   <View className="w-full mb-3">
                     <FilePreview 
                       localUri={selectedFile}
@@ -419,7 +419,7 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
               
               {/* Show current file if editing and no new file selected */}
               {isEditMode && initialTopic?.file_id && !selectedFile && !removeCurrentFile && (
-                <View className="bg-gray-50 border border-gray-300 rounded-lg p-3 mt-3">
+                <View className="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-3 mt-3">
                   <View className="w-full mb-3">
                     <FilePreview 
                       fileId={initialTopic.file_id}
@@ -492,11 +492,11 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
           onRequestClose={() => setShowDeleteDialog(false)}
         >
           <View className="flex-1 bg-black/50 justify-center items-center">
-            <View className="bg-white rounded-xl p-5 mx-5 min-w-75">
-              <Text className="text-lg font-bold text-gray-800 mb-3 text-center">
+            <View className="bg-white dark:bg-gray-800 rounded-xl p-5 mx-5 min-w-75">
+              <Text className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-3 text-center">
                 Delete Topic?
               </Text>
-              <Text className="text-sm text-gray-600 text-center mb-5 leading-5">
+              <Text className="text-sm text-gray-600 dark:text-gray-300 text-center mb-5 leading-5">
                 This action cannot be undone. This will permanently delete the topic and all its comments.
               </Text>
               <View className="flex-row gap-3">
