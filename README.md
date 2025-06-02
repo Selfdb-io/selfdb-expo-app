@@ -1,7 +1,7 @@
 # SelfDB Expo Integration
 
 > To use this app you must have a SelfDB instance running locally or remotely.  
-> Don’t have SelfDB yet? Grab a license at <https://selfdb.io> and follow the installation guide on our website.
+> Don’t have SelfDB yet? Grab a your selfhostable copy <https://selfdb.io> and follow the installation guide on our website.
 
 ## Project Overview
 This Expo React Native application demonstrates how to use **SelfDB** as the backend while following mobile best-practices. It ships with:
