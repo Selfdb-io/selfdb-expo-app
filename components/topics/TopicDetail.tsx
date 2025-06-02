@@ -43,7 +43,7 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({ topicId, topic, onBack
 
   // Header component - render directly without memoization to prevent delays
   const HeaderComponent = (
-    <View className="flex-row justify-between items-center px-5 pb-2 border-b border-gray-200">
+    <View className="flex-row justify-between items-center px-5 pb-2 border-b border-gray-200 dark:border-gray-700">
       <TouchableOpacity
         className="p-2 rounded-full justify-center items-center w-10 h-10"
         onPress={() => router.canGoBack() ? router.back() : router.replace('/')}
