@@ -13,10 +13,10 @@ import {
 import { useAuth } from '@/contexts/AuthContext'
 import { db, storage } from '@/services/selfdb'
 import { Comment } from '@/types'
-import { useImagePicker } from '@/lib/deviceUtils'
 import { FilePreview } from '@/components/FilePreview'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { MediaPickerSelector } from '@/components/ui/MediaPickerSelector'
 import { Ionicons } from '@expo/vector-icons'
 
 interface CreateCommentProps {
@@ -47,9 +47,6 @@ export const CreateComment: React.FC<CreateCommentProps> = ({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [removeCurrentFile, setRemoveCurrentFile] = useState(false)
   const isEditMode = !!initialComment
-
-  // image-picker utilities
-  const { launchCamera, launchImageLibrary, showMediaPickerOptions } = useImagePicker()
 
   useEffect(() => {
     if (initialComment) {
@@ -187,44 +184,6 @@ export const CreateComment: React.FC<CreateCommentProps> = ({
     }
   }
 
-  const openCamera = async () => {
-    const result = await launchCamera()
-    
-    if (result && !result.canceled && result.assets[0]) {
-      const asset = result.assets[0]
-      setSelectedFile(asset.uri)
-      setUploadedFileId(null)
-    } else if (result === null) {
-      Alert.alert(
-        'Camera Error', 
-        'Failed to open camera. This might be because you\'re using a simulator or permissions were denied.'
-      )
-    }
-    // If result.canceled is true, user cancelled - no action needed
-  }
-
-  const openLibrary = async () => {
-    const result = await launchImageLibrary()
-    
-    if (result && !result.canceled && result.assets[0]) {
-      const asset = result.assets[0]
-      setSelectedFile(asset.uri)
-      setUploadedFileId(null)
-    } else if (result === null) {
-      Alert.alert('Error', 'Failed to access photo library. Please check permissions in Settings.')
-    }
-    // If result.canceled is true, user cancelled - no action needed
-  }
-
-  const pickMedia = async () => {
-    const options = await showMediaPickerOptions(openCamera, openLibrary)
-    Alert.alert(
-      'Select Media',
-      'Choose how you want to add media',
-      options
-    )
-  }
-
   const removeFile = () => {
     setSelectedFile(null)
     setUploadedFileId(null)
@@ -329,15 +288,13 @@ export const CreateComment: React.FC<CreateCommentProps> = ({
 
             {/* File Upload Section */}
             <View className="mt-4">
-              <TouchableOpacity
-                className="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg py-3 px-4 items-center mb-3"
-                onPress={pickMedia}
+              <MediaPickerSelector
+                onFileSelected={(uri) => {
+                  setSelectedFile(uri)
+                  setUploadedFileId(null)
+                }}
                 disabled={loading}
-              >
-                <Text className="text-primary-500 text-base font-medium">
-                  📷 {isEditMode && initialComment?.file_id ? 'Replace Photo or Video' : 'Add Photo or Video'}
-                </Text>
-              </TouchableOpacity>
+              />
 
               {selectedFile && (
                 <View className="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-3 items-center">
