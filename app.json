@@ -17,13 +17,15 @@
       },
       "config": {
         "usesNonExemptEncryption": false
-      }
+      },
+      "icon": "./assets/images/icon.png"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "icon": "./assets/images/icon.png",
       "edgeToEdgeEnabled": true,
       "permissions": [
         "android.permission.CAMERA",
