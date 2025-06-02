@@ -274,6 +274,9 @@ export const CreateComment: React.FC<CreateCommentProps> = ({
               numberOfLines={6}
               textAlignVertical="top"
               autoFocus
+              scrollEnabled={true}
+              blurOnSubmit={false}
+              returnKeyType="default"
             />
             
             {!isAuthenticated && !isEditMode && (

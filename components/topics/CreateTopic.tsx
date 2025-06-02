@@ -312,6 +312,9 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
               multiline
               numberOfLines={6}
               textAlignVertical="top"
+              scrollEnabled={true}
+              blurOnSubmit={false}
+              returnKeyType="default"
             />
             
             {!isAuthenticated && !isEditMode && (
