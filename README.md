@@ -30,11 +30,19 @@ This Expo React Native application demonstrates how to use **SelfDB** as the bac
    ```bash
    npm install
    ```
-4. Start the development server  
+4. Start the development server  for iOS development
    ```bash
-   npx expo start
-   ```
+# Install Watchman (improves file watching performance)
+brew update && brew install watchman # <--- if you don't have it installed already
+
+# Install Expo Dev Client for better debugging
+npx expo install expo-dev-client # <--- if you don't have it installed already
+
+# Run on iOS simulator/device
+npx expo run:ios
+```
 5. Open the project in the Expo Go app (or run it on an emulator)
+
 
 ## Environment Setup
 Edit `.env` and point it to your SelfDB instance:
