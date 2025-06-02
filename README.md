@@ -58,7 +58,7 @@ This Expo React Native application demonstrates how to use **SelfDB** as the bac
 
 
 ## Database Setup
-1. Create the required tables in SelfDB:
+1. Create the required tables in SelfDB Dashboard:
 
 ```sql
 -- Create topics table
