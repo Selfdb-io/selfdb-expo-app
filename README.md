@@ -3,6 +3,60 @@
 To use this app you must have a SelfDB instance running locally or remotely.  
 Don’t have SelfDB yet? Grab a your self-hostable copy <https://selfdb.io> and follow the installation guide on our website.
 
+## Project Overview
+This Expo React Native application demonstrates how to use **SelfDB** as the backend while following mobile best-practices. It ships with:
+
+- 🔐 **Authentication** (context provider, login / register screens, persistent session)
+- 🗄️ **Database CRUD** (topics & comments with file upload)
+- 📡 **Real-time ready** subscriptions
+- 🏗️ **Modular project structure** (components, contexts, types, services)
+
+## Prerequisites
+- Node.js ≥ 18
+- Expo CLI (`npm i -g expo-cli`)
+- A running SelfDB instance (local or remote)
+
+## Quick Start
+
+1. **Clone the repo**
+   ```bash
+   git clone https://github.com/Selfdb-io/selfdb-expo-app
+   cd selfdb-expo-app
+   ```
+
+2. **Configure the environment**
+   ```bash
+   cp .env.example .env
+   # then open `.env` and set:
+   ```
+   ```env
+   EXPO_PUBLIC_SELFDB_URL=http://localhost:8000
+   EXPO_PUBLIC_SELFDB_STORAGE_URL=http://localhost:8001
+   EXPO_PUBLIC_SELFDB_ANON_KEY=your_key_here
+   ```
+
+3. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+4. **Install additional tools (if needed)**
+   ```bash
+   # Install Watchman (improves file watching performance)
+   brew update && brew install watchman
+   
+   # Install Expo Dev Client for better debugging
+   npx expo install expo-dev-client
+   ```
+
+5. **Start the development server**
+   ```bash
+   npx expo start        # general development
+   npx expo run:ios      # iOS simulator/device
+   ```
+
+
+
 ## Database Setup
 1. Create the required tables in SelfDB:
 
@@ -40,73 +94,6 @@ CREATE INDEX IF NOT EXISTS idx_comments_created_at ON comments(created_at);
 ```
 
 2. Create a **public** storage bucket named `discussion`.
-
-## Project Overview
-This Expo React Native application demonstrates how to use **SelfDB** as the backend while following mobile best-practices. It ships with:
-
-- 🔐 **Authentication** (context provider, login / register screens, persistent session)
-- 🗄️ **Database CRUD** (topics & comments with file upload)
-- 📡 **Real-time ready** subscriptions
-- 🏗️ **Modular project structure** (components, contexts, types, services)
-
-## Prerequisites
-- Node.js ≥ 18
-- Expo CLI (`npm i -g expo-cli`)
-- A running SelfDB instance (local or remote)
-
-## Quick Start
-
-1. **Clone the repo**
-   ```bash
-   git clone https://github.com/Selfdb-io/selfdb-expo-app
-   cd selfdb-expo-app
-   ```
-
-2. **Copy the environment template**
-   ```bash
-   cp .env.example .env
-   ```
-
-3. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-4. **Install additional tools (if needed)**
-   ```bash
-   # Install Watchman (improves file watching performance)
-   brew update && brew install watchman # <--- if you don't have it installed already
-   
-   # Install Expo Dev Client for better debugging
-   npx expo install expo-dev-client # <--- if you don't have it installed already
-   ```
-
-5. **Start the development server**
-   ```bash
-   # For general development
-   npx expo start
-   
-   # Or run directly on iOS simulator/device
-   npx expo run:ios
-   ```
-
-
-
-## Environment Setup
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env` and point it to your SelfDB instance:
-
-```env
-EXPO_PUBLIC_SELFDB_URL=http://localhost:8000
-EXPO_PUBLIC_SELFDB_STORAGE_URL=http://localhost:8001
-EXPO_PUBLIC_SELFDB_ANON_KEY=your_key_here
-```
-
-
 
 ## Next Steps
 1. Update `.env` with your production SelfDB credentials.  
