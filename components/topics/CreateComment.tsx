@@ -291,14 +291,6 @@ export const CreateComment: React.FC<CreateCommentProps> = ({
 
             {/* File Upload Section */}
             <View className="mt-4">
-              <MediaPickerSelector
-                onFileSelected={(uri) => {
-                  setSelectedFile(uri)
-                  setUploadedFileId(null)
-                }}
-                disabled={loading}
-              />
-
               {selectedFile && (
                 <View className="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-3 items-center">
                   <View className="w-full mb-3">
@@ -357,13 +349,15 @@ export const CreateComment: React.FC<CreateCommentProps> = ({
           </View>
           
           <View className="flex-row justify-between gap-4">
-            <Button
-              title="Cancel"
-              variant="outline"
-              onPress={onCancel}
-              disabled={loading}
-              className="flex-1"
-            />
+            <View className="flex-1">
+              <MediaPickerSelector
+                onFileSelected={(uri) => {
+                  setSelectedFile(uri)
+                  setUploadedFileId(null)
+                }}
+                disabled={loading}
+              />
+            </View>
             
             <TouchableOpacity
               className={`flex-1 bg-primary-500 py-4 rounded-lg items-center justify-center ${loading ? 'opacity-60' : ''}`}

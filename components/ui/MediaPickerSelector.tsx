@@ -1,5 +1,5 @@
 import React from 'react'
-import { View, TouchableOpacity, Text } from 'react-native'
+import { View, TouchableOpacity, Text, Alert } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useImagePicker } from '@/lib/deviceUtils'
 
@@ -16,39 +16,51 @@ export const MediaPickerSelector: React.FC<MediaPickerSelectorProps> = ({
 
   const pickFromCamera = async () => {
     if (disabled) return
-    const result = await launchCamera()
-    if (result && !result.canceled && result.assets[0]) {
-      onFileSelected(result.assets[0].uri)
+    
+    try {
+      const result = await launchCamera()
+      if (result && !result.canceled && result.assets[0]) {
+        onFileSelected(result.assets[0].uri)
+      }
+    } catch (error) {
+      console.error('Camera error:', error)
+      Alert.alert('Error', 'Failed to open camera')
     }
   }
 
   const pickFromLibrary = async () => {
     if (disabled) return
-    const result = await launchImageLibrary()
-    if (result && !result.canceled && result.assets[0]) {
-      onFileSelected(result.assets[0].uri)
+    
+    try {
+      const result = await launchImageLibrary()
+      if (result && !result.canceled && result.assets[0]) {
+        onFileSelected(result.assets[0].uri)
+      }
+    } catch (error) {
+      console.error('Image library error:', error)
+      Alert.alert('Error', 'Failed to open photo library')
     }
   }
 
   return (
-    <View className="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-0.5 mb-2">
-      <View className="flex-row justify-center items-center gap-4">
+    <View className="border border-gray-300 bg-transparent active:bg-gray-50 dark:border-gray-600 dark:active:bg-gray-700 rounded-lg px-4 py-2.5">
+      <View className="flex-row justify-center items-center gap-6">
         <TouchableOpacity
           onPress={pickFromCamera}
           disabled={disabled}
-          className={`items-center ${disabled ? 'opacity-50' : ''}`}
+          className={`items-center ${disabled ? 'opacity-60' : ''}`}
         >
           <Ionicons name="camera" size={20} color="#007AFF" />
-          <Text className="text-blue-600 dark:text-blue-400 text-xs mt-0.5">Camera</Text>
+          <Text className="text-gray-900 dark:text-gray-100 text-base font-medium mt-1">Camera</Text>
         </TouchableOpacity>
         
         <TouchableOpacity
           onPress={pickFromLibrary}
           disabled={disabled}
-          className={`items-center ${disabled ? 'opacity-50' : ''}`}
+          className={`items-center ${disabled ? 'opacity-60' : ''}`}
         >
           <Ionicons name="image" size={20} color="#007AFF" />
-          <Text className="text-blue-600 dark:text-blue-400 text-xs mt-0.5">Photos</Text>
+          <Text className="text-gray-900 dark:text-gray-100 text-base font-medium mt-1">Photos</Text>
         </TouchableOpacity>
       </View>
     </View>
