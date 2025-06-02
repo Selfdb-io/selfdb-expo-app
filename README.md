@@ -42,6 +42,18 @@ lib/
   utils.ts          # Utility functions
 ```
 
+## Quick Start
+
+git clone https://github.com/Selfdb-io/selfdb-expo-app
+
+cd selfdb-expo-app
+
+Create a .env file from the example:
+```
+cp .env.example .env
+```
+
+
 ## Environment Setup
 
 The `.env` file contains your SelfDB configuration:
