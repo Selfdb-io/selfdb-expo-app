@@ -31,15 +31,15 @@ export const MediaPickerSelector: React.FC<MediaPickerSelectorProps> = ({
   }
 
   return (
-    <View className="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-1 mb-3">
-      <View className="flex-row justify-center items-center gap-6">
+    <View className="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-0.5 mb-2">
+      <View className="flex-row justify-center items-center gap-4">
         <TouchableOpacity
           onPress={pickFromCamera}
           disabled={disabled}
           className={`items-center ${disabled ? 'opacity-50' : ''}`}
         >
-          <Ionicons name="camera" size={24} color="#007AFF" />
-          <Text className="text-blue-600 dark:text-blue-400 text-xs mt-1">Camera</Text>
+          <Ionicons name="camera" size={20} color="#007AFF" />
+          <Text className="text-blue-600 dark:text-blue-400 text-xs mt-0.5">Camera</Text>
         </TouchableOpacity>
         
         <TouchableOpacity
@@ -47,8 +47,8 @@ export const MediaPickerSelector: React.FC<MediaPickerSelectorProps> = ({
           disabled={disabled}
           className={`items-center ${disabled ? 'opacity-50' : ''}`}
         >
-          <Ionicons name="image" size={24} color="#007AFF" />
-          <Text className="text-blue-600 dark:text-blue-400 text-xs mt-1">Photos</Text>
+          <Ionicons name="image" size={20} color="#007AFF" />
+          <Text className="text-blue-600 dark:text-blue-400 text-xs mt-0.5">Photos</Text>
         </TouchableOpacity>
       </View>
     </View>
