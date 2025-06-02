@@ -417,9 +417,10 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
 
             {/* ➜ CLOSE BUTTON – rendered last so it’s always on top */}
             <TouchableOpacity
-              className="absolute top-4 right-4 z-50 bg-black/70 rounded-full w-12 h-12 justify-center items-center"
+              className="absolute right-4 z-50 bg-black/70 rounded-full w-12 h-12 justify-center items-center"
               onPress={toggleFullscreen}
               activeOpacity={0.8}
+              style={[{ top: insets.top + 4, elevation: 40 }]} // ↰ respect safe-area like image modal
             >
               <Ionicons name="close" size={28} color="white" />
             </TouchableOpacity>
