@@ -1,24 +1,24 @@
-import React, { useState, useEffect } from 'react'
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-  Modal,
-} from 'react-native'
-import { useAuth } from '@/contexts/AuthContext'
-import { db, storage } from '@/services/selfdb'
-import { Topic } from '@/types'
 import { FilePreview } from '@/components/FilePreview'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { MediaPickerSelector } from '@/components/ui/MediaPickerSelector'
+import { useAuth } from '@/contexts/AuthContext'
+import { db, storage } from '@/services/selfdb'
+import { Topic } from '@/types'
 import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
-import { MediaPickerSelector } from '@/components/ui/MediaPickerSelector'
+import React, { useEffect, useState } from 'react'
+import {
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native'
 
 interface CreateTopicProps {
   onTopicCreated: (topic: Topic) => void
@@ -220,18 +220,43 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
         }
       }
 
-      // Delete all comments associated with this topic first
+      // Delete all comments associated with this topic one by one
       try {
-        await db
+        // First, fetch all comments for this topic
+        const comments = await db
           .from('comments')
           .where('topic_id', initialTopic.id)
-          .delete()
-      } catch (commentsDeleteError) {
-        console.warn('Could not delete topic comments:', commentsDeleteError)
-        // Continue with topic deletion
+          .execute()
+
+        // Delete each comment individually
+        for (const comment of comments) {
+          try {
+            // Delete comment's file if it exists
+            if (comment.file_id && typeof comment.file_id === 'string') {
+              try {
+                await storage.files.deleteFile('discussion', comment.file_id)
+              } catch (fileDeleteError) {
+                console.warn(`Could not delete file for comment ${comment.id}:`, fileDeleteError)
+                // Continue with comment deletion even if file deletion fails
+              }
+            }
+
+            // Delete the comment
+            await db
+              .from('comments')
+              .where('id', comment.id)
+              .delete()
+          } catch (commentDeleteError) {
+            console.warn(`Could not delete comment ${comment.id}:`, commentDeleteError)
+            // Continue deleting other comments even if one fails
+          }
+        }
+      } catch (commentsError) {
+        console.warn('Could not fetch or delete topic comments:', commentsError)
+        // Continue with topic deletion even if comments deletion fails
       }
 
-      // Delete topic using query builder API
+      // Delete the topic itself
       await db
         .from('topics')
         .where('id', initialTopic.id)
@@ -250,7 +275,7 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
       } else if (onCancel) {
         onCancel()
       } else {
-           router.replace('/')
+        router.replace('/')
       }
     } catch (error) {
       console.error('Failed to delete topic:', error)
