@@ -30,3 +30,6 @@ export const db = selfdb.db
 export const storage = selfdb.storage
 export const realtime = selfdb.realtime
 export const functions = selfdb.functions
+export const files = selfdb.files
+
+

@@ -1,23 +1,23 @@
-import React, { useState, useEffect } from 'react'
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-  Modal,
-} from 'react-native'
-import { useAuth } from '@/contexts/AuthContext'
-import { db, storage } from '@/services/selfdb'
-import { Comment } from '@/types'
 import { FilePreview } from '@/components/FilePreview'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { MediaPickerSelector } from '@/components/ui/MediaPickerSelector'
+import { useAuth } from '@/contexts/AuthContext'
+import { db, files, storage } from '@/services/selfdb'
+import { Comment } from '@/types'
 import { Ionicons } from '@expo/vector-icons'
+import React, { useEffect, useState } from 'react'
+import {
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native'
 
 interface CreateCommentProps {
   topicId: string
@@ -120,7 +120,7 @@ export const CreateComment: React.FC<CreateCommentProps> = ({
             (removeCurrentFile && !selectedFile) // Removing current file
           )) {
             try {
-              await storage.files.deleteFile('discussion', initialComment.file_id)
+              await files.deleteFile(initialComment.file_id)
             } catch (deleteError) {
               console.warn('Could not delete old file:', deleteError)
               // Continue even if old file deletion fails
@@ -203,7 +203,7 @@ export const CreateComment: React.FC<CreateCommentProps> = ({
       // Delete attached file if it exists
       if (initialComment.file_id) {
         try {
-          await storage.files.deleteFile('discussion', initialComment.file_id)
+          await files.deleteFile(initialComment.file_id)
         } catch (deleteError) {
           console.warn('Could not delete comment file:', deleteError)
           // Continue with comment deletion even if file deletion fails

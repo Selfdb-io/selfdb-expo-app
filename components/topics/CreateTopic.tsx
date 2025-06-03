@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { MediaPickerSelector } from '@/components/ui/MediaPickerSelector'
 import { useAuth } from '@/contexts/AuthContext'
-import { db, storage } from '@/services/selfdb'
+import { db, files, storage } from '@/services/selfdb'
 import { Topic } from '@/types'
 import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
@@ -129,7 +129,7 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
             (removeCurrentFile && !selectedFile) // Removing current file
           )) {
             try {
-              await storage.files.deleteFile('discussion', initialTopic.file_id)
+              await files.deleteFile(initialTopic.file_id)
             } catch (deleteError) {
               console.warn('Could not delete old file:', deleteError)
               // Continue even if old file deletion fails
@@ -213,7 +213,7 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
       // Delete attached file if it exists
       if (initialTopic.file_id) {
         try {
-          await storage.files.deleteFile('discussion', initialTopic.file_id)
+          await files.deleteFile(initialTopic.file_id)
         } catch (deleteError) {
           console.warn('Could not delete topic file:', deleteError)
           // Continue with topic deletion even if file deletion fails
@@ -234,7 +234,7 @@ export const CreateTopic: React.FC<CreateTopicProps> = ({
             // Delete comment's file if it exists
             if (comment.file_id && typeof comment.file_id === 'string') {
               try {
-                await storage.files.deleteFile('discussion', comment.file_id)
+                await files.deleteFile(comment.file_id)
               } catch (fileDeleteError) {
                 console.warn(`Could not delete file for comment ${comment.id}:`, fileDeleteError)
                 // Continue with comment deletion even if file deletion fails
